@@ -14,10 +14,10 @@ export default class MainWindow extends EventEmitter {
 
     this.win = new BrowserWindow({
       title,
+      show: false,
       width: 1600,
       height: 900,
       backgroundColor: Colors.DARK_GRAY3,
-      show: false,
       webPreferences: {
         nodeIntegration: true,
         webSecurity: false, // Allows fetch() to use "file" scheme
