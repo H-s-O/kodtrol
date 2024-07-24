@@ -9,6 +9,7 @@ export const ITEM_BEHAVIOR_TOGGLE = 'toggle';
 
 export const ITEM_TRIGGER_MIDI_CC = 'midi_cc';
 export const ITEM_TRIGGER_MIDI_NOTE = 'midi_note';
+export const ITEM_TRIGGER_OSC_ADR_ARG = 'osc_adr_arg';
 
 export const ITEM_LABELS = {
   [ITEM_BEHAVIOR_TRIGGER_ONCE]: 'Trigger once',
@@ -17,4 +18,5 @@ export const ITEM_LABELS = {
 
   [ITEM_TRIGGER_MIDI_CC]: 'MIDI CC value 0/127',
   [ITEM_TRIGGER_MIDI_NOTE]: 'MIDI note on/off',
+  [ITEM_TRIGGER_OSC_ADR_ARG]: 'OSC argument 1',
 };

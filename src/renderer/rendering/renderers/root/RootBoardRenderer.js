@@ -230,17 +230,32 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     if (triggerableBlocksCount > 0) {
       for (let i = 0; i < triggerableBlocksCount; i++) {
         const block = this._blocks[triggerableBlocks[i]];
-        // @TODO midi_note
-        if (block.trigger === 'midi_cc') {
-          if (data[1] === parseInt(block.triggerSource)) {
-            const on = data[2] === 127;
-            console.log(data[1], data[2], on);
-            if (on) {
-              updatedActiveItems[block.id] = true;
-            } else {
-              delete updatedActiveItems[block.id];
+        if (type === 'midi') {
+          if (block.trigger === 'midi_cc') {
+            if (data[1] === parseInt(block.triggerSource)) {
+              const on = data[2] === 127;
+              console.log(data[1], data[2], on); //@TODO cleanup
+              if (on) {
+                updatedActiveItems[block.id] = true;
+              } else {
+                delete updatedActiveItems[block.id];
+              }
+              change = true
             }
-            change = true
+          }
+          // @TODO midi_note
+        } else if (type === 'osc') {
+          if (block.trigger === 'osc_adr_arg') {
+            if (data.address === block.triggerSource) {
+              const on = data.args && data.args.length > 0 ? !!data.args[0].value : false;
+              console.log(data.address, data.args, on); //@TODO cleanup
+              if (on) {
+                updatedActiveItems[block.id] = true;
+              } else {
+                delete updatedActiveItems[block.id];
+              }
+              change = true
+            }
           }
         }
       }
