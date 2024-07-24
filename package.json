@@ -7,7 +7,7 @@
   "homepage": "http://kodtrol.com",
   "repository": "https://github.com/H-s-O/Kodtrol",
   "bugs": "https://github.com/H-s-O/Kodtrol/issues",
-  "main": "./build/main/kodtrol-main.js",
+  "main": "build/main/kodtrol-main.js",
   "scripts": {
     "postinstall": "patch-package && copy-files-from-to",
     "start": "cross-env-shell KODTROL_DEV=true \"npx electron -r esbuild-register ./src/main/kodtrol-main.js\"",

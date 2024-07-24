@@ -50,7 +50,7 @@ if (IS_RENDERER) {
       join(ROOT_DIR, 'src', 'ui', 'splash.html'),
       join(ROOT_DIR, 'src', 'ui', 'splash.js'),
     ],
-    external: ['electron*'],
+    external: ['electron'],
     loader: {
       '.js': 'jsx',
       '.html': 'copy',
@@ -63,6 +63,7 @@ if (IS_RENDERER) {
     sourcesContent: !IS_BUILD,
     platform: 'node',
     target: 'chrome80',
+    format: 'iife',
     outdir: join(ROOT_DIR, 'build'),
     logLevel: 'info',
   };
@@ -77,12 +78,13 @@ if (IS_RENDERER) {
     entryPoints: [
       join(ROOT_DIR, 'src', 'main', 'kodtrol-main.js'),
     ],
-    external: ['electron*'],
+    external: ['electron'],
     bundle: true,
     sourcemap: true,
     sourcesContent: !IS_BUILD,
     platform: 'node',
     target: 'node12.13.0', // @TODO get automatically
+    format: 'cjs',
     outdir: join(ROOT_DIR, 'build', 'main'),
     logLevel: 'info',
   };
