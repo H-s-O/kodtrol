@@ -1,6 +1,6 @@
 import EventEmitter from 'events';
 import { fork } from 'child_process';
-import path from 'path';
+import { join } from 'path';
 
 import { getCompiledScriptsDir, getConvertedAudiosDir } from '../lib/fileSystem';
 import * as RendererEvent from '../events/RendererEvent';
@@ -12,7 +12,10 @@ export default class Renderer extends EventEmitter {
   constructor() {
     super();
 
-    const processPath = path.join(__dirname, '..', '..', 'renderer', 'kodtrol-renderer.js');
+    const processPath =
+      isDev
+        ? join(__dirname, '..', '..', 'renderer', 'kodtrol-renderer.js')
+        : join(__dirname, '..', 'renderer', 'kodtrol-renderer.js');
 
     this.childProcess = fork(processPath, {
       env: {

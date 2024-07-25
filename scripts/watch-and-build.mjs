@@ -76,16 +76,19 @@ if (IS_RENDERER) {
       }),
     ],
     entryPoints: [
+      // Main
       join(ROOT_DIR, 'src', 'main', 'kodtrol-main.js'),
+      // Engine
+      join(ROOT_DIR, 'src', 'renderer', 'kodtrol-renderer.js'),
     ],
-    external: ['electron', 'file-uri-to-path', 'bindings', 'midi'],
+    external: ['electron', '@serialport', 'bindings', 'ffi-napi', 'file-uri-to-path', 'jazz-midi', '@laser-dac', 'midi', 'ref-napi'],
     bundle: true,
     sourcemap: true,
     sourcesContent: !IS_BUILD,
     platform: 'node',
     target: 'node12.13.0', // @TODO get automatically
     format: 'cjs',
-    outdir: join(ROOT_DIR, 'build', 'main'),
+    outdir: join(ROOT_DIR, 'build'),
     logLevel: 'info',
   };
 }
