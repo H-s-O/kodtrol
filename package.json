@@ -52,7 +52,7 @@
     "chokidar": "^2.1.2",
     "color": "^3.0.0",
     "css-electron-reset": "^1.0.0",
-    "dmx": "^0.2.4",
+    "dmx": "^0.2.5",
     "domready": "^1.0.8",
     "eases": "^1.0.8",
     "electron-log": "^4.2.0",
