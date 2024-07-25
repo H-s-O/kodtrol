@@ -78,7 +78,7 @@ if (IS_RENDERER) {
     entryPoints: [
       join(ROOT_DIR, 'src', 'main', 'kodtrol-main.js'),
     ],
-    external: ['electron'],
+    external: ['electron', 'file-uri-to-path', 'bindings', 'midi'],
     bundle: true,
     sourcemap: true,
     sourcesContent: !IS_BUILD,

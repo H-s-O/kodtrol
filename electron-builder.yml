@@ -5,6 +5,9 @@ files:
   - "build"
   - "!node_modules/**/*"
   - "node_modules/**/*.node"
+  - "node_modules/file-uri-to-path/**/*.{js,json}"
+  - "node_modules/bindings/**/*.{js,json}"
+  - "node_modules/midi/**/*.{js,json}"
 asar: false
 mac:
   icon: "build/icons/app.icns"
