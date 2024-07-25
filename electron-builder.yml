@@ -5,28 +5,22 @@ files:
   - "build"
   - "!node_modules/**/*"
   - "node_modules/**/*.node"
-  - "node_modules/@serialport/**/*.{js,json}"
-  - "node_modules/bindings/**/*.{js,json}"
-  - "node_modules/ffi-napi/**/*.{js,json}"
-  - "node_modules/file-uri-to-path/**/*.{js,json}"
-  - "node_modules/jazz-midi/**/*.{js,json}"
-  - "node_modules/@laser-dac/**/*.{js,json,dll,node}"
-  - "node_modules/midi/**/*.{js,json}"
-  - "node_modules/ref-napi/**/*.{js,json}"
+  - "node_modules/@serialport/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/bindings/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/ffi-napi/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/file-uri-to-path/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/jazz-midi/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/@laser-dac/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/midi/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/ref-napi/**/*.{js,json,node,dll,so,dylib}"
 asar: false
 mac:
-  files:
-    - "node_modules/**/*.dylib"
   icon: "build/icons/app.icns"
   target: dir
 win:
-  files:
-    - "node_modules/**/*.dll"
   icon: "build/icons/app.ico"
   target: dir
 linux:
-  files:
-    - "node_modules/**/*.so"
   icon: "build/icons/png"
   target: dir
 npmRebuild: false
