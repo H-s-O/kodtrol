@@ -16,7 +16,6 @@ export default class SplashWindow extends EventEmitter {
     this.win = new BrowserWindow({
       title: APP_NAME,
       show: false,
-      maximizable: false,
       width: 600,
       height: 400,
       maximizable: false,

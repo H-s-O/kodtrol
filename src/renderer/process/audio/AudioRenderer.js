@@ -54,7 +54,7 @@ export default class AudioRenderer {
         contextIsolation: false,
       },
     });
-    this._audioWindow.webContents.openDevTools();
+    // this._audioWindow.webContents.openDevTools();
 
     this._audioWindow.loadFile(join(__dirname, '..', '..', '..', '..', 'build', 'audio', 'index.html'));
     this._audioWindow.webContents.once('did-finish-load', this._onFinishLoad.bind(this));

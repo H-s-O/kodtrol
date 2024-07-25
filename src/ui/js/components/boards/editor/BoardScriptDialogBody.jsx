@@ -13,6 +13,7 @@ import {
   ITEM_TRIGGER_MIDI_CC,
   ITEM_BEHAVIOR_TRIGGER_ONCE,
   ITEM_BEHAVIOR_TOGGLE,
+  ITEM_TRIGGER_OSC_ADR_ARG,
 } from '../../../../../common/js/constants/items';
 
 export default function BoardScriptDialogBody({ value, onChange, validation, layers = [], scripts = [] }) {
@@ -117,6 +118,7 @@ export default function BoardScriptDialogBody({ value, onChange, validation, lay
           <option value="null">&lt;none&gt;</option>
           <option value={ITEM_TRIGGER_MIDI_NOTE}>{ITEM_LABELS[ITEM_TRIGGER_MIDI_NOTE]}</option>
           <option value={ITEM_TRIGGER_MIDI_CC}>{ITEM_LABELS[ITEM_TRIGGER_MIDI_CC]}</option>
+          <option value={ITEM_TRIGGER_OSC_ADR_ARG}>{ITEM_LABELS[ITEM_TRIGGER_OSC_ADR_ARG]}</option>
         </SelectInput>
       </InlineFormGroup>
       {trigger && (
@@ -130,7 +132,7 @@ export default function BoardScriptDialogBody({ value, onChange, validation, lay
             name="triggerSource"
             value={triggerSource}
             onChange={onChange}
-            placeholder={trigger === ITEM_TRIGGER_MIDI_NOTE ? 'MIDI note name' : 'MIDI CC channel'}
+            placeholder={trigger === ITEM_TRIGGER_MIDI_NOTE ? 'MIDI note name' : trigger === ITEM_TRIGGER_MIDI_CC ? 'MIDI CC channel' : 'OSC address'}
           />
         </InlineFormGroup>
       )}

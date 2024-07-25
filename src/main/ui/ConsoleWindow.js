@@ -20,7 +20,6 @@ export default class ConsoleWindow extends EventEmitter {
       minWidth: 400,
       minHeight: 400,
       backgroundColor: Colors.DARK_GRAY3,
-      show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
