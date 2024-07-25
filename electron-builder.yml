@@ -15,6 +15,8 @@ files:
   - "node_modules/ref-napi/**/*.{js,json}"
 asar: false
 mac:
+  files:
+    - "node_modules/**/*.dylib"
   icon: "build/icons/app.icns"
   target: dir
 win:
@@ -23,6 +25,8 @@ win:
   icon: "build/icons/app.ico"
   target: dir
 linux:
+  files:
+    - "node_modules/**/*.so"
   icon: "build/icons/png"
   target: dir
 npmRebuild: false
