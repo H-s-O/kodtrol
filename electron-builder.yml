@@ -4,8 +4,11 @@ copyright: "TEKUNIKA 2020"
 files:
   - "./build"
 mac:
+  target: dir
   icon: "./build/icons/mac/icon.icns"
 win:
+  target: dir
   icon: "./build/icons/win/icon.ico"
 linux:
+  target: dir
   icon: "./build/icons/png"
