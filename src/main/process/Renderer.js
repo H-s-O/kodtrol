@@ -31,6 +31,8 @@ export default class Renderer extends EventEmitter {
       } : {}),
     });
     this.childProcess.on('message', this.onMessage);
+    this.childProcess.on('disconnect', this.onDisconnect);
+    this.childProcess.on('exit', this.onExit);
   }
 
   onMessage = (message) => {
@@ -57,6 +59,14 @@ export default class Renderer extends EventEmitter {
     }
   }
 
+  onDisconnect = () => {
+    console.error('Renderer subprocess disconnected!');
+  }
+
+  onExit = (code, signal) => {
+    console.error('Renderer process exited! | code:', code, '| signal:', signal)
+  }
+
   send = (data) => {
     if (this.childProcess) {
       if (!this.childProcess.connected) {
@@ -70,6 +80,7 @@ export default class Renderer extends EventEmitter {
 
   destroy = () => {
     if (this.childProcess) {
+      this.childProcess.removeAllListeners();
       this.childProcess.kill();
     }
     this.childProcess = null;

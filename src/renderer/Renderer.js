@@ -496,6 +496,10 @@ export default class Renderer {
   }
 
   _send(data) {
+    if (!process.connected) {
+      console.error('_send() failed; not connected to main process!');
+      return;
+    }
     process.send(data);
   }
 
