@@ -1,4 +1,6 @@
-import { argv } from 'yargs';
+import yargs from 'yargs/yargs';
+
+const argv = yargs(process.argv.slice(2)).argv;
 
 export const screenshotsFile = () => {
     if ('screenshots' in argv && !!argv.screenshots) {
