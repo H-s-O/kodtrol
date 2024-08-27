@@ -1,6 +1,8 @@
 import yargs from 'yargs/yargs';
 
-const argv = yargs(process.argv.slice(2)).argv;
+import isDev from '../../common/js/lib/isDev';
+
+const argv = yargs(process.argv.slice(isDev ? 2 : 1)).argv;
 
 export const screenshotsFile = () => {
     if ('screenshots' in argv && !!argv.screenshots) {
