@@ -15,7 +15,7 @@ import * as WatcherEvent from './events/WatcherEvent';
 import Store from './data/Store';
 import { updateIOStatusAction } from '../common/js/store/actions/ioStatus';
 import Renderer from './process/Renderer';
-import { screenshotsFile, projectFile } from './lib/commandLine';
+import { cliScreenshotsFile, cliProjectFile, cliRunBoard } from './lib/commandLine';
 import compileScript from './lib/compileScript';
 import { PROJECT_FILE_EXTENSION } from '../common/js/constants/app';
 import { ipcMainListen, ipcMainClear } from './lib/ipcMain';
@@ -27,6 +27,7 @@ import isDev from '../common/js/lib/isDev';
 import ConsoleWindow from './ui/ConsoleWindow';
 import { setConsoleClosedAction } from '../common/js/store/actions/console';
 import SplashWindow from './ui/SplashWindow';
+import { runBoardAction } from '../common/js/store/actions/boards';
 
 export default class Main {
   currentProjectFilePath = null;
@@ -86,7 +87,7 @@ export default class Main {
   }
 
   run = () => {
-    const project = projectFile();
+    const project = cliProjectFile();
     if (project !== null) {
       this.loadProject(project, false, false);
       return;
@@ -324,7 +325,7 @@ export default class Main {
 
   onMainWindowLoaded = () => {
     // Check if we are in the "generate screenshots" mode
-    const screenshots = screenshotsFile();
+    const screenshots = cliScreenshotsFile();
     if (screenshots !== null) {
       const { default: data } = require(screenshots);
       this.generateScreenshots(data);
@@ -415,6 +416,14 @@ export default class Main {
     this.onMediasChanged();
     this.onTimelinesChanged();
     this.onBoardsChanged();
+
+    if (this.currentProjectFilePath) {
+      const runBoard = cliRunBoard();
+      if (runBoard && this.store) {
+        console.log('runBoard');
+        this.store.dispatch(runBoardAction(runBoard));
+      }
+    }
   }
 
   onRendererTimelineInfoUpdate = (info) => {
