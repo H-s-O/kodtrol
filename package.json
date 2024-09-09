@@ -1,0 +1,37 @@
+{
+  "name": "kodtrol",
+  "productName": "Kodtrol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Code-based show control software",
+  "homepage": "http://kodtrol.com",
+  "repository": "https://github.com/H-s-O/Kodtrol",
+  "bugs": "https://github.com/H-s-O/Kodtrol/issues",
+  "main": "build/main/main.js",
+  "scripts": {
+    "start": "cross-env-shell KODTROL_DEV=true \"npm run build:main && electron .\"",
+    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --outdir=build/main",
+    "build:engine": "esbuild src/engine/engine.html src/engine/engine.ts --loader:.html=copy --bundle --platform=browser --outdir=build/engine",
+    "watch:engine": "npm run build:engine -- --watch",
+    "build:ui": "esbuild src/ui/ui.html src/ui/ui.ts --loader:.html=copy --bundle --platform=browser --outdir=build/ui",
+    "watch:ui": "npm run build:ui -- --watch"
+  },
+  "author": "HsO <hugostonge@gmail.com>",
+  "license": "ISC",
+  "engines": {
+    "node": "^20.17.0",
+    "npm": "^10.8.2"
+  },
+  "dependencies": {
+    "electron": "^32.0.2",
+    "redux": "^5.0.1",
+    "websocket": "^1.0.35"
+  },
+  "devDependencies": {
+    "@types/w3c-web-serial": "^1.0.6",
+    "@types/w3c-web-usb": "^1.0.10",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.23.1",
+    "typescript": "^5.5.4"
+  }
+}
