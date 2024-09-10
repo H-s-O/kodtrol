@@ -10,11 +10,12 @@
   "main": "build/main/main.js",
   "scripts": {
     "start": "cross-env-shell KODTROL_DEV=true \"npm run build:main && electron .\"",
-    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --outdir=build/main",
+    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --external:serialport --target=node20 --outdir=build/main",
     "build:engine": "esbuild src/engine/engine.html src/engine/engine.ts --loader:.html=copy --bundle --platform=browser --outdir=build/engine",
     "watch:engine": "npm run build:engine -- --watch",
     "build:ui": "esbuild src/ui/ui.html src/ui/ui.ts --loader:.html=copy --bundle --platform=browser --outdir=build/ui",
-    "watch:ui": "npm run build:ui -- --watch"
+    "watch:ui": "npm run build:ui -- --watch",
+    "release": "npm run build:main && npm run build:engine && npm run build:ui"
   },
   "author": "HsO <hugostonge@gmail.com>",
   "license": "ISC",
@@ -23,9 +24,9 @@
     "npm": "^10.8.2"
   },
   "dependencies": {
-    "electron": "^32.0.2",
-    "redux": "^5.0.1",
-    "websocket": "^1.0.35"
+    "@bucky24/redux-websocket": "^0.3.4",
+    "@reduxjs/toolkit": "^2.2.7",
+    "electron": "^32.0.2"
   },
   "devDependencies": {
     "@types/w3c-web-serial": "^1.0.6",
