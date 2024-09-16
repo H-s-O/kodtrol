@@ -1,13 +1,15 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, Middleware } from "@reduxjs/toolkit";
 
 import currentProjectFile from "./slices/currentProjectFile";
 
-export const store = configureStore({
+export const createKodtrolStore = (preloadedState = {}, extraMiddlewares: Middleware[] = []) => configureStore({
+  preloadedState,
   reducer: {
     currentProjectFile,
-  }
-})
+  },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(extraMiddlewares),
+});
 
-export type AppStore = typeof store;
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export type AppStore = ReturnType<typeof createKodtrolStore>;
+export type RootState = ReturnType<ReturnType<typeof createKodtrolStore>['getState']>;
+export type AppDispatch = ReturnType<typeof createKodtrolStore>['dispatch'];

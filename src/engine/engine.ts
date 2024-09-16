@@ -1,3 +1,8 @@
+import { ReduxWebSocketClient } from "@bucky24/redux-websocket";
+
+import { DEFAULT_WS_PORT } from "../common/constants";
+import { createKodtrolStore } from "../common/store/store";
+
 /*
 Size in Bytes   Description
 1               Start of message delimiter, hex 7E.
@@ -117,9 +122,9 @@ const decodeEnttecSerial = (arr: number[]) => {
 
 const listWebSerialPorts = () => {
   navigator.serial.getPorts().then((ports) => {
-    console.group('serial ports');
-    ports.forEach((port) => console.log(port.getInfo()));
-    console.groupEnd();
+    // console.group('serial ports');
+    // ports.forEach((port) => console.log(port.getInfo()));
+    // console.groupEnd();
 
     testPort || doPortTest(ports[0]);
   });
@@ -127,11 +132,23 @@ const listWebSerialPorts = () => {
 
 const listWebUsbDevices = () => {
   navigator.usb.getDevices().then((devices) => {
-    console.group('usb devices');
-    devices.forEach((device) => console.log(device.productName, device.manufacturerName, device.productId, device.vendorId, device.serialNumber));
-    console.groupEnd();
+    // console.group('usb devices');
+    // devices.forEach((device) => console.log(device.productName, device.manufacturerName, device.productId, device.vendorId, device.serialNumber));
+    // console.groupEnd();
   });
 };
 
 setInterval(listWebSerialPorts, 2000);
 setInterval(listWebUsbDevices, 2000);
+
+
+console.log("engine session", kodtrol_bridge.wsSession)
+const wsPort = DEFAULT_WS_PORT;
+const wsUrl = `ws://localhost:${wsPort}`;
+const socketHandler = new ReduxWebSocketClient(wsUrl, "protocol");
+socketHandler.setAuthentication(kodtrol_bridge.wsSession);
+socketHandler.on("stateReceived", ({ initialState }) => {
+  console.log("engine received state");
+  const store = createKodtrolStore(initialState, [socketHandler.getMiddleware()]);
+  return store;
+});

@@ -1,8 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type CurrentProjectFileState = string | undefined;
+type CurrentProjectFileState = string | null;
 
-const initialState = undefined satisfies CurrentProjectFileState as CurrentProjectFileState;
+const initialState = null satisfies CurrentProjectFileState as CurrentProjectFileState;
 
 const slice = createSlice({
   name: 'currentProjectFile',
@@ -12,7 +12,7 @@ const slice = createSlice({
       state = action.payload;
     },
     clear: (state) => {
-      state = undefined;
+      state = null;
     },
   }
 })

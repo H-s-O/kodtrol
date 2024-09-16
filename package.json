@@ -9,13 +9,13 @@
   "bugs": "https://github.com/H-s-O/Kodtrol/issues",
   "main": "build/main/main.js",
   "scripts": {
-    "start": "cross-env-shell KODTROL_DEV=true \"npm run build:main && electron .\"",
-    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --external:serialport --target=node20 --outdir=build/main",
-    "build:engine": "esbuild src/engine/engine.html src/engine/engine.ts --loader:.html=copy --bundle --platform=browser --outdir=build/engine",
+    "start": "cross-env-shell KODTROL_DEV=true \"npm run build:main && electron -r source-map-support/register .\"",
+    "build:main": "esbuild src/main/main.ts --bundle --platform=node --external:electron --target=node20 --sourcemap=inline --sources-content=false --outdir=build/main",
+    "build:engine": "esbuild src/engine/engine.html src/engine/engine.ts src/engine/engine-preload.ts --loader:.html=copy --bundle --platform=browser --external:electron --sourcemap=inline --sources-content=false --outdir=build/engine",
     "watch:engine": "npm run build:engine -- --watch",
-    "build:ui": "esbuild src/ui/ui.html src/ui/ui.ts --loader:.html=copy --bundle --platform=browser --outdir=build/ui",
+    "build:ui": "esbuild src/ui/ui.html src/ui/ui.ts --loader:.html=copy --bundle --platform=browser --sourcemap=inline --sources-content=false --outdir=build/ui",
     "watch:ui": "npm run build:ui -- --watch",
-    "release": "npm run build:main && npm run build:engine && npm run build:ui"
+    "dist": "npm run build:main && npm run build:engine && npm run build:ui && npx electron-builder"
   },
   "author": "HsO <hugostonge@gmail.com>",
   "license": "ISC",
@@ -26,13 +26,16 @@
   "dependencies": {
     "@bucky24/redux-websocket": "^0.3.4",
     "@reduxjs/toolkit": "^2.2.7",
-    "electron": "^32.0.2"
+    "ws": "^7.5.10"
   },
   "devDependencies": {
     "@types/w3c-web-serial": "^1.0.6",
     "@types/w3c-web-usb": "^1.0.10",
     "cross-env": "^7.0.3",
+    "electron": "^32.1.0",
+    "electron-builder": "^25.0.5",
     "esbuild": "^0.23.1",
+    "source-map-support": "^0.5.21",
     "typescript": "^5.5.4"
   }
 }
