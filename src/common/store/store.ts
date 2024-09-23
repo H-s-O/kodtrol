@@ -1,12 +1,8 @@
 import { configureStore, Middleware } from "@reduxjs/toolkit";
 
-import currentProjectFile from "./slices/currentProjectFile";
-
-export const createKodtrolStore = (preloadedState = {}, extraMiddlewares: Middleware[] = []) => configureStore({
+export const createKodtrolStore = (preloadedState = {}, reducer = {}, extraMiddlewares: Middleware[] = []) => configureStore({
   preloadedState,
-  reducer: {
-    currentProjectFile,
-  },
+  reducer,
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(extraMiddlewares),
 });
 

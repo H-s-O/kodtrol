@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import { envIsDev, envUiPort, envWsPort } from "./lib/env";
 import { APP_NAME, DEFAULT_WS_PORT } from "../common/constants";
 import { AppStore, createKodtrolStore } from "../common/store/store";
+import rootReducer from "../common/store/rootReducer";
 
 // homemade polyfill
 (global as any).WebSocket = WebSocket
@@ -29,15 +30,22 @@ app.whenReady()
     const wsSession = randomUUID();
 
     const reduxWsServer = createWithPort(wsPort);
+    reduxWsServer.on('getInitialState', ({ session }) => {
+      console.log('---------session', session)
+      return {}
+    })
 
     let store: AppStore;
 
-    const reduxMainClient = new ReduxWebSocketClient(wsUrl, wsProtocol);
+    const reduxMainClient = new ReduxWebSocketClient(wsUrl, wsProtocol, { specialActions: [], debug: true });
     reduxMainClient.setAuthentication(wsSession);
-    reduxMainClient.on('stateReceived', ({ initialState }) => {
-      console.log('allo');
-      store = createKodtrolStore(initialState, [reduxMainClient.getMiddleware()]);
-      console.log(store.getState());
+    reduxMainClient.setReducers(rootReducer);
+    reduxMainClient.on('stateReceived', ({ reducers, initialState }) => {
+      console.log('allo', initialState);
+      store = createKodtrolStore(initialState, reducers, [reduxMainClient.getMiddleware()]);
+      store.subscribe(() => {
+        console.log('########### MAIN store change', Date.now(), store.getState())
+      })
       return store;
     });
 

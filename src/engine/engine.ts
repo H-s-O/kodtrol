@@ -1,7 +1,9 @@
 import { ReduxWebSocketClient } from "@bucky24/redux-websocket";
 
 import { DEFAULT_WS_PORT } from "../common/constants";
-import { createKodtrolStore } from "../common/store/store";
+import { AppStore, createKodtrolStore } from "../common/store/store";
+import { setCurrentProjectFileAction } from "../common/store/slices/currentProjectFile";
+import rootReducer from "../common/store/rootReducer";
 
 /*
 Size in Bytes   Description
@@ -145,10 +147,26 @@ setInterval(listWebUsbDevices, 2000);
 console.log("engine session", kodtrol_bridge.wsSession)
 const wsPort = DEFAULT_WS_PORT;
 const wsUrl = `ws://localhost:${wsPort}`;
-const socketHandler = new ReduxWebSocketClient(wsUrl, "protocol");
+const socketHandler = new ReduxWebSocketClient(wsUrl, "protocol", { specialActions: [], debug: true });
 socketHandler.setAuthentication(kodtrol_bridge.wsSession);
-socketHandler.on("stateReceived", ({ initialState }) => {
-  console.log("engine received state");
-  const store = createKodtrolStore(initialState, [socketHandler.getMiddleware()]);
+socketHandler.setReducers(rootReducer);
+let store: AppStore
+socketHandler.on("stateReceived", ({ reducers, initialState }) => {
+  console.log("engine received state", reducers, initialState);
+  store = createKodtrolStore(initialState, reducers, [socketHandler.getMiddleware()]);
+  store.subscribe(() => {
+    console.log("engine store change:", Date.now(), store.getState());
+  })
+  console.log("engine state:", store.getState())
+
+  const btn = document.createElement('button')
+  btn.innerText = '######'
+  btn.onclick = () => {
+    console.log('clic');
+    store.dispatch(setCurrentProjectFileAction('/tst.kodtrol'));
+  }
+  document.body.appendChild(btn)
+
   return store;
 });
+
