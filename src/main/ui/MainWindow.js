@@ -4,7 +4,6 @@ import { BrowserWindow } from 'electron';
 import { Colors } from '@blueprintjs/core';
 
 import * as MainWindowEvent from '../events/MainWindowEvent';
-import isDev from '../../common/js/lib/isDev';
 
 export default class MainWindow extends EventEmitter {
   win = null;
@@ -30,11 +29,7 @@ export default class MainWindow extends EventEmitter {
     this.win.once('closed', this.onClosed);
     this.win.once('ready-to-show', this.onReadyToShow);
 
-    this.win.loadFile(
-      isDev
-        ? join(__dirname, '..', '..', '..', 'build', 'ui', 'index.html')
-        : join('build', 'ui', 'index.html')
-    );
+    this.win.loadFile(join(__dirname, '..', '..', 'ui', 'index.html'));
 
     this.contents = this.win.webContents;
     this.contents.once('did-finish-load', this.onFinishLoad);

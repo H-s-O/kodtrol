@@ -4,7 +4,6 @@ import { BrowserWindow } from 'electron';
 import { Colors } from '@blueprintjs/core';
 
 import * as ConsoleWindowEvent from '../events/ConsoleWindowEvent';
-import isDev from '../../common/js/lib/isDev';
 
 export default class ConsoleWindow extends EventEmitter {
   win = null;
@@ -31,11 +30,7 @@ export default class ConsoleWindow extends EventEmitter {
     this.win.once('closed', this.onClosed);
     this.win.once('ready-to-show', this.onReadyToShow);
 
-    this.win.loadFile(
-      isDev
-        ? join(__dirname, '..', '..', '..', 'build', 'ui', 'console.html')
-        : join('build', 'ui', 'console.html')
-    );
+    this.win.loadFile(join(__dirname, '..', '..', 'ui', 'console.html'));
 
     this.contents = this.win.webContents;
     this.contents.once('did-finish-load', this.onFinishLoad);

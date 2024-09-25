@@ -4,15 +4,8 @@ copyright: "TEKUNIKA 2024"
 files:
   - "build"
   - "!node_modules/**/*"
-  - "node_modules/**/*.node"
-  - "node_modules/@serialport/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/bindings/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/ffi-napi/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/file-uri-to-path/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/jazz-midi/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/@laser-dac/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/midi/**/*.{js,json,node,dll,so,dylib}"
-  - "node_modules/ref-napi/**/*.{js,json,node,dll,so,dylib}"
+  - "node_modules/eases/**/*.{js,json}"
+  - "node_modules/**/*.{js,json,node,dll,so,dylib}"
 asar: false
 mac:
   icon: "build/icons/app.icns"

@@ -5,7 +5,6 @@ import { Colors } from '@blueprintjs/core';
 
 import * as ConsoleWindowEvent from '../events/ConsoleWindowEvent';
 import { APP_NAME } from '../../common/js/constants/app';
-import isDev from '../../common/js/lib/isDev';
 
 export default class SplashWindow extends EventEmitter {
   win = null;
@@ -32,11 +31,7 @@ export default class SplashWindow extends EventEmitter {
     // this.win.once('closed', this.onClosed);
     this.win.once('ready-to-show', this.onReadyToShow);
 
-    this.win.loadFile(
-      isDev
-        ? join(__dirname, '..', '..', '..', 'build', 'ui', 'splash.html')
-        : join('build', 'ui', 'splash.html')
-    );
+    this.win.loadFile(join(__dirname, '..', '..', 'ui', 'splash.html'));
 
     this.contents = this.win.webContents;
     this.contents.once('did-finish-load', this.onFinishLoad);

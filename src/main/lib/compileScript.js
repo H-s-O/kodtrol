@@ -19,7 +19,7 @@ export default ({ id, content }) => {
     const wrapperName = `Script__${id}__${safeAppVersion}`;
     const wrappedContent = `function ${wrapperName}(logCallback){${EOL}const __logCallback=logCallback;${EOL}${helpers}${EOL}${convertedContent}${EOL}}`;
 
-    const scriptRequire = `require = require('module').createRequire('${join(__dirname, '..', '..', '..', 'node_modules').replace(/\\/g, '\\\\')}')`;
+    const scriptRequire = `require = require('module').createRequire('${join(__dirname, '..', '..', 'node_modules').replace(/\\/g, '\\\\')}')`;
 
     const finalContent = `${scriptRequire}${EOL}module.exports = ${wrappedContent}`;
     const finalPath = getCompiledScriptPath(id);

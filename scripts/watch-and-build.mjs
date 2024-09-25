@@ -76,14 +76,15 @@ if (IS_RENDERER) {
       }),
     ],
     entryPoints: [
+      // Common
+      join(ROOT_DIR, 'src', 'common', '**', '*.js'),
       // Main
-      join(ROOT_DIR, 'src', 'main', 'kodtrol-main.js'),
+      join(ROOT_DIR, 'src', 'main', '**', '*.js'),
       // Engine
-      join(ROOT_DIR, 'src', 'renderer', 'kodtrol-renderer.js'),
+      join(ROOT_DIR, 'src', 'renderer', '**', '*.js'),
     ],
-    external: ['electron', '@serialport', 'bindings', 'ffi-napi', 'file-uri-to-path', 'jazz-midi', '@laser-dac', 'midi', 'ref-napi'],
-    bundle: true,
-    sourcemap: true,
+    bundle: false,
+    sourcemap: 'inline',
     sourcesContent: !IS_BUILD,
     platform: 'node',
     target: 'node12.13.0', // @TODO get automatically
