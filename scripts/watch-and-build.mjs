@@ -76,14 +76,22 @@ if (IS_RENDERER) {
       }),
     ],
     entryPoints: [
-      // Common
-      join(ROOT_DIR, 'src', 'common', '**', '*.js'),
+      // // Common
+      // join(ROOT_DIR, 'src', 'common', '**', '*.js'),
+      // // Main
+      // join(ROOT_DIR, 'src', 'main', '**', '*.js'),
+      // // Engine
+      // join(ROOT_DIR, 'src', 'renderer', '**', '*.js'),
+
       // Main
-      join(ROOT_DIR, 'src', 'main', '**', '*.js'),
+      join(ROOT_DIR, 'src', 'main', 'kodtrol-main.js'),
       // Engine
-      join(ROOT_DIR, 'src', 'renderer', '**', '*.js'),
+      join(ROOT_DIR, 'src', 'renderer', 'kodtrol-renderer.js'),
+      // Audio subprocess
+      join(ROOT_DIR, 'src', 'renderer', 'process', 'audio', 'kodtrol-audio.js'),
     ],
-    bundle: false,
+    bundle: true,
+    packages: 'external',
     sourcemap: 'inline',
     sourcesContent: !IS_BUILD,
     platform: 'node',
