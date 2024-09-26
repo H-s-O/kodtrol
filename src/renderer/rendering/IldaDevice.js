@@ -4,7 +4,7 @@ import { Path, Rect, Line, Circle, HersheyFont, loadHersheyFont } from '@laser-d
 
 import AbstractDevice from './AbstractDevice';
 
-const FONTS_DIR = join(__dirname, '..', 'hershey_fonts');
+const FONTS_DIR = join(__dirname, 'hershey_fonts');
 const FONTS = glob.sync(join(FONTS_DIR, '*.jhf')).reduce((obj, fontPath) => {
   const name = basename(fontPath, '.jhf');
   obj[name] = loadHersheyFont(fontPath);

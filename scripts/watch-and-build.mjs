@@ -74,6 +74,10 @@ if (IS_RENDERER) {
         source: join(ROOT_DIR, 'src', 'main', 'lib', 'helpers'),
         target: join(ROOT_DIR, 'build', 'main', 'helpers'),
       }),
+      copyFilesPlugin({
+        source: join(ROOT_DIR, 'src', 'renderer', 'hershey_fonts'),
+        target: join(ROOT_DIR, 'build', 'renderer', 'hershey_fonts'),
+      }),
     ],
     entryPoints: [
       // // Common
