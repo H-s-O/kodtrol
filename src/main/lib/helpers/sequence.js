@@ -8,6 +8,9 @@ export default function sequence(arr, id = '__default') {
   }
   return arr[__sequence[id]++];
 }
+export function sequenceIndex(id = '__default') {
+  return __sequence[id]
+}
 export function sequenceReset(id = '__default') {
   __sequence[id] = 0;
 }
