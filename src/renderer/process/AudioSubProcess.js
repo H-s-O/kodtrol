@@ -4,7 +4,6 @@ import { join } from 'path';
 import EventEmitter from 'events';
 
 import { getConvertedAudiosDir } from '../lib/fileSystem';
-import isDev from '../../common/js/lib/isDev';
 
 export default class AudioSubProcess extends EventEmitter {
   _childProcess = null;
@@ -12,13 +11,9 @@ export default class AudioSubProcess extends EventEmitter {
   constructor() {
     super();
 
-    const processPath = join(__dirname, '.', 'audio', 'kodtrol-audio.js');
+    const processPath = join(__dirname, 'process', 'audio', 'kodtrol-audio.js');
 
     this._childProcess = spawn(electron, [
-      ...(isDev ? [
-        '-r',
-        '@babel/register',
-      ] : []),
       processPath,
     ], {
       stdio: ['ipc', 'pipe', 'inherit'],

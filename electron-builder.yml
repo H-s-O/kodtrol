@@ -1,14 +1,19 @@
 appId: "ca.tekunika.kodtrol"
 productName: "Kodtrol"
-copyright: "TEKUNIKA 2020"
+copyright: "TEKUNIKA 2024"
 files:
-  - "./build"
+  - "build"
+  - "!node_modules/**/*"
+  - "node_modules/**/*.{js,json,node,dll,so,dylib}"
+asarUnpack:
+  - "node_modules"
 mac:
+  icon: "build/icons/app.icns"
   target: dir
-  icon: "./build/icons/mac/icon.icns"
 win:
+  icon: "build/icons/app.ico"
   target: dir
-  icon: "./build/icons/win/icon.ico"
 linux:
+  icon: "build/icons/png"
   target: dir
-  icon: "./build/icons/png"
+npmRebuild: false

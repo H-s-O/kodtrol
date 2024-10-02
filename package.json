@@ -7,35 +7,30 @@
   "homepage": "http://kodtrol.com",
   "repository": "https://github.com/H-s-O/Kodtrol",
   "bugs": "https://github.com/H-s-O/Kodtrol/issues",
-  "main": "./build/main/kodtrol-main.js",
+  "main": "build/main/kodtrol-main.js",
   "scripts": {
-    "start": "cross-env KODTROL_DEV=true npx electron -r @babel/register ./src/main/kodtrol-main.js",
-    "dev": "cross-env KODTROL_DEV=true npm run clear-build && parcel watch ./src/ui/index.html ./src/ui/console.html ./src/ui/splash.html ./src/audio/index.html --target electron --out-dir ./build --public-url ../",
-    "clear-build": "npx rimraf ./build/*",
-    "build-babel": "babel ./src/main --ignore 'src/main/lib/helpers/*.js' --copy-files --out-dir ./build/main && babel ./src/renderer --out-dir ./build/renderer && babel ./src/common --out-dir ./build/common",
-    "build-parcel": "parcel build ./src/ui/index.html ./src/ui/console.html ./src/ui/splash.html ./src/audio/index.html --target electron --out-dir ./build --public-url ../ --no-source-maps --no-minify",
-    "build-icons": "npx electron-icon-builder --input=./src/icons/app.png --output=./build",
+    "postinstall": "patch-package && copy-files-from-to",
+    "start": "cross-env-shell KODTROL_DEV=true \"npm run build:main && npx electron .\"",
+    "watch:renderer": "npm run script:watch-and-build -- --renderer",
+    "build:renderer": "npm run script:watch-and-build -- --renderer --build",
+    "build:main": "npm run script:watch-and-build -- --main --build",
+    "build:addons": "npx electron-rebuild",
+    "clear:build-dir": "npx rimraf --glob ./build/*",
+    "clear:dist-dir": "npx rimraf --glob ./dist/*",
+    "build-and-dist": "npm run clear:build-dir && npm run build:main && npm run build:renderer && npm run script:generate-icons && npm run clear:dist-dir && npm run dist",
     "dist": "npx electron-builder build",
-    "build-and-dist": "npm run clear-build && npm run build-babel && npm run build-parcel && npm run build-icons && npm run dist",
-    "rebuild": "npx electron-rebuild",
-    "generate-screenshots": "npm start -- --screenshots ../../dev/screenshots.js --project ./dev/demo_project.json",
-    "generate-helpers-doc": "jsdoc -c jsdoc-conf.json > ./dev/helpers_doc.json",
-    "test": "mocha --recursive -r @babel/register",
-    "postinstall": "patch-package && copy-files-from-to"
+    "generate:screenshots": "npm start -- --screenshots ../../dev/screenshots.js --project ./dev/demo_project.json",
+    "generate:helpers-doc": "jsdoc -c jsdoc-conf.json > ./dev/helpers_doc.json",
+    "script:watch-and-build": "node ./scripts/watch-and-build.mjs",
+    "script:print-electron-versions": "npx electron -r ./scripts/print-electron-versions.js",
+    "script:generate-icons": "node ./scripts/generate-icons.mjs",
+    "test": "mocha --recursive -r esbuild-register"
   },
   "author": "HsO <hugostonge@gmail.com>",
   "license": "ISC",
   "engines": {
-    "node": ">=12.0.0"
-  },
-  "staticFiles": {
-    "staticPath": [
-      {
-        "staticPath": "./node_modules/ace-builds/src-noconflict/",
-        "staticOutDir": "/ui/",
-        "excludeGlob": "**/!(worker-javascript.js)"
-      }
-    ]
+    "node": "^18.17.1",
+    "npm": "^9.8.1"
   },
   "copyFiles": [
     {
@@ -57,7 +52,7 @@
     "chokidar": "^2.1.2",
     "color": "^3.0.0",
     "css-electron-reset": "^1.0.0",
-    "dmx": "^0.2.4",
+    "dmx": "^0.2.5",
     "domready": "^1.0.8",
     "eases": "^1.0.8",
     "electron-log": "^4.2.0",
@@ -83,29 +78,22 @@
     "yargs": "^13.3.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.16",
-    "@babel/core": "^7.11.6",
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
-    "@babel/plugin-proposal-object-rest-spread": "^7.11.0",
-    "@babel/preset-env": "^7.12.10",
-    "@babel/preset-react": "^7.10.4",
-    "@babel/register": "^7.11.5",
-    "chai": "^4.2.0",
-    "copy-files-from-to": "^3.2.0",
-    "cross-env": "^7.0.2",
+    "@electron/rebuild": "^3.4.1",
+    "chai": "^4.3.10",
+    "copy-files-from-to": "^3.9.1",
+    "cross-env": "^7.0.3",
     "electron": "^8.5.5",
-    "electron-builder": "^22.6.1",
-    "electron-icon-builder": "^1.0.2",
-    "electron-rebuild": "^1.11.0",
-    "jsdoc": "^3.6.4",
-    "less": "^3.11.1",
-    "mocha": "^7.2.0",
-    "node-abi": "^2.17.0",
-    "parcel-bundler": "^1.12.4",
-    "parcel-plugin-static-files-copy": "^2.4.3",
-    "patch-package": "^6.2.2",
+    "electron-builder": "^24.9.1",
+    "esbuild": "^0.19.8",
+    "esbuild-copy-files-plugin": "^1.1.0",
+    "esbuild-register": "^3.5.0",
+    "esbuild-style-plugin": "^1.6.3",
+    "icon-gen": "^4.0.0",
+    "jsdoc": "^4.0.2",
+    "less": "^4.2.0",
+    "mocha": "^10.2.0",
+    "patch-package": "^8.0.0",
     "redux-devtools-extension": "^2.13.5",
-    "rimraf": "^3.0.2"
+    "rimraf": "^5.0.5"
   }
 }

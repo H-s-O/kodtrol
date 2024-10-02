@@ -1,10 +1,9 @@
 import EventEmitter from 'events';
 import { fork } from 'child_process';
-import path from 'path';
+import { join } from 'path';
 
 import { getCompiledScriptsDir, getConvertedAudiosDir } from '../lib/fileSystem';
 import * as RendererEvent from '../events/RendererEvent';
-import isDev from '../../common/js/lib/isDev';
 
 export default class Renderer extends EventEmitter {
   childProcess = null;
@@ -12,20 +11,14 @@ export default class Renderer extends EventEmitter {
   constructor() {
     super();
 
-    const processPath = path.join(__dirname, '..', '..', 'renderer', 'kodtrol-renderer.js');
+    const processPath = join(__dirname, '..', 'renderer', 'kodtrol-renderer.js');
 
     this.childProcess = fork(processPath, {
       env: {
         KODTROL_DEV: process.env['KODTROL_DEV'],
         KODTROL_SCRIPTS_DIR: getCompiledScriptsDir(),
         KODTROL_AUDIOS_DIR: getConvertedAudiosDir(),
-      },
-      ...(isDev ? {
-        execArgv: [
-          '-r',
-          '@babel/register',
-        ],
-      } : {}),
+      }
     });
     this.childProcess.on('message', this.onMessage);
     this.childProcess.on('disconnect', this.onDisconnect);
