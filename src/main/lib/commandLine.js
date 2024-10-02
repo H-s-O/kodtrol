@@ -22,6 +22,20 @@ export const cliNewProject = () => {
     return 'newProject' in argv && argv.newProject === true;
 }
 
+export const cliRunScript = () => {
+  if ('runScript' in argv && !!argv.runScript) {
+      return argv.runScript;
+  }
+  return null;
+}
+
+export const cliRunTimeline = () => {
+    if ('runTimeline' in argv && !!argv.runTimeline) {
+        return argv.runTimeline;
+    }
+    return null;
+}
+
 export const cliRunBoard = () => {
     if ('runBoard' in argv && !!argv.runBoard) {
         return argv.runBoard;

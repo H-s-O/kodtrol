@@ -15,7 +15,7 @@ import * as WatcherEvent from './events/WatcherEvent';
 import Store from './data/Store';
 import { updateIOStatusAction } from '../common/js/store/actions/ioStatus';
 import Renderer from './process/Renderer';
-import { cliScreenshotsFile, cliProjectFile, cliRunBoard } from './lib/commandLine';
+import { cliScreenshotsFile, cliProjectFile, cliRunBoard, cliRunTimeline, cliRunScript } from './lib/commandLine';
 import compileScript from './lib/compileScript';
 import { PROJECT_FILE_EXTENSION } from '../common/js/constants/app';
 import { ipcMainListen, ipcMainClear } from './lib/ipcMain';
@@ -28,6 +28,8 @@ import ConsoleWindow from './ui/ConsoleWindow';
 import { setConsoleClosedAction } from '../common/js/store/actions/console';
 import SplashWindow from './ui/SplashWindow';
 import { runBoardAction } from '../common/js/store/actions/boards';
+import { runTimelineAction } from '../common/js/store/actions/timelines';
+import { runScriptAction } from '../common/js/store/actions/scripts';
 
 export default class Main {
   currentProjectFilePath = null;
@@ -418,9 +420,19 @@ export default class Main {
     this.onBoardsChanged();
 
     if (this.currentProjectFilePath) {
+      const runScript = cliRunScript();
+      if (runScript && this.store) {
+        console.log('runScript:', runScript);
+        this.store.dispatch(runScriptAction(runScript));
+      }
+      const runTimeline = cliRunTimeline();
+      if (runTimeline && this.store) {
+        console.log('runTimeline:', runTimeline);
+        this.store.dispatch(runTimelineAction(runTimeline));
+      }
       const runBoard = cliRunBoard();
       if (runBoard && this.store) {
-        console.log('runBoard');
+        console.log('runBoard:', runBoard);
         this.store.dispatch(runBoardAction(runBoard));
       }
     }
