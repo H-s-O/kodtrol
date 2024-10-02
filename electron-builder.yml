@@ -4,9 +4,9 @@ copyright: "TEKUNIKA 2024"
 files:
   - "build"
   - "!node_modules/**/*"
-  - "node_modules/eases/**/*.{js,json}"
   - "node_modules/**/*.{js,json,node,dll,so,dylib}"
-asar: false
+asarUnpack:
+  - "node_modules"
 mac:
   icon: "build/icons/app.icns"
   target: dir
