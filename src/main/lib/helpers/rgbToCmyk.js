@@ -1,3 +1,8 @@
+/**
+ * @function rgbToCmyk
+ * @param {Object} rgb An RGB color object
+ * @returns {Object} The CMYK color object of the converted `rgb` color
+ */
 export default function rgbToCmyk(rgb) {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
