@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { ipcRendererListen, ipcRendererClear } from '../lib/ipcRenderer';
-import { SCRIPT_ERROR } from '../../../common/js/constants/events';
+import { APP_WARNING, SCRIPT_ERROR } from '../../../common/js/constants/events';
 import { ICON_TIMELINE, ICON_BOARD, ICON_SCRIPT } from '../../../common/js/constants/icons';
 
 const StyledTitle = styled.p`
@@ -17,9 +17,11 @@ const StyledHr = styled.hr`
   border-top: 1px solid #FFF;
 `
 
-const StyledMessage = styled.pre``;
+const StyledPreMessage = styled.pre``;
 
-export default function ScriptsErrorsContainer() {
+const StyledPlainMessage = styled.p``;
+
+export default function ToastsContainer() {
   const scripts = useSelector((state) => state.scripts);
   const timelines = useSelector((state) => state.timelines);
   const boards = useSelector((state) => state.boards);
@@ -55,16 +57,37 @@ export default function ScriptsErrorsContainer() {
           <>
             <StyledTitle>{breadcrumb}</StyledTitle>
             <StyledHr />
-            <StyledMessage>{message}</StyledMessage>
+            <StyledPreMessage>{message}</StyledPreMessage>
           </>
         )
       });
     }
   }, [ref, scripts, timelines, boards]);
 
+  const appWarningHandler = useCallback((e, message) => {
+    if (ref.current) {
+      ref.current.show({
+        icon: 'warning',
+        intent: Intent.WARNING,
+        message: (
+          <>
+            <StyledTitle>Warning</StyledTitle>
+            <StyledHr />
+            <StyledPlainMessage>{message}</StyledPlainMessage>
+          </>
+        )
+      });
+    }
+  }, [ref]);
+
   useEffect(() => {
     ipcRendererListen(SCRIPT_ERROR, scriptErrorHandler);
     return () => ipcRendererClear(SCRIPT_ERROR, scriptErrorHandler);
+  }, []);
+
+  useEffect(() => {
+    ipcRendererListen(APP_WARNING, appWarningHandler);
+    return () => ipcRendererClear(APP_WARNING, appWarningHandler);
   }, []);
 
   return (

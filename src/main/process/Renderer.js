@@ -11,6 +11,10 @@ export default class Renderer extends EventEmitter {
   constructor() {
     super();
 
+    this.launch();
+  }
+
+  launch = () => {
     const processPath = join(__dirname, '..', 'renderer', 'kodtrol-renderer.js');
 
     this.childProcess = fork(processPath, {
@@ -21,8 +25,8 @@ export default class Renderer extends EventEmitter {
       }
     });
     this.childProcess.on('message', this.onMessage);
-    this.childProcess.on('disconnect', this.onDisconnect);
-    this.childProcess.on('exit', this.onExit);
+    this.childProcess.once('disconnect', this.onDisconnect);
+    this.childProcess.once('exit', this.onExit);
   }
 
   onMessage = (message) => {
@@ -51,10 +55,14 @@ export default class Renderer extends EventEmitter {
 
   onDisconnect = () => {
     console.error('Renderer subprocess disconnected!');
+    this.destroy();
+    this.emit(RendererEvent.CLOSED);
   }
 
   onExit = (code, signal) => {
-    console.error('Renderer process exited! | code:', code, '| signal:', signal)
+    console.error('Renderer process exited! | code:', code, '| signal:', signal);
+    this.destroy();
+    this.emit(RendererEvent.CLOSED);
   }
 
   send = (data) => {

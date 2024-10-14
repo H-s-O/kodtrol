@@ -5,3 +5,4 @@ export const SCRIPT_LOG = 'script_log';
 export const TRIGGER_CREATE_PROJECT = 'trigger_create_project';
 export const TRIGGER_LOAD_PROJECT = 'trigger_load_project';
 export const TRIGGER_QUIT = 'trigger_quit';
+export const APP_WARNING = 'app_warning';

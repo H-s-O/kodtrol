@@ -19,7 +19,7 @@ import { cliScreenshotsFile, cliProjectFile, cliRunBoard, cliRunTimeline, cliRun
 import compileScript from './lib/compileScript';
 import { PROJECT_FILE_EXTENSION } from '../common/js/constants/app';
 import { ipcMainListen, ipcMainClear } from './lib/ipcMain';
-import { UPDATE_TIMELINE_INFO, UPDATE_BOARD_INFO, SCRIPT_ERROR, SCRIPT_LOG, TRIGGER_CREATE_PROJECT, TRIGGER_LOAD_PROJECT, TRIGGER_QUIT } from '../common/js/constants/events';
+import { UPDATE_TIMELINE_INFO, UPDATE_BOARD_INFO, SCRIPT_ERROR, SCRIPT_LOG, TRIGGER_CREATE_PROJECT, TRIGGER_LOAD_PROJECT, TRIGGER_QUIT, APP_WARNING } from '../common/js/constants/events';
 import MidiWatcher from './lib/watchers/MidiWatcher';
 import { updateIOAvailableAction } from '../common/js/store/actions/ioAvailable';
 import { IO_MIDI, IO_INPUT, IO_OUTPUT } from '../common/js/constants/io';
@@ -394,6 +394,7 @@ export default class Main {
   createRenderer = () => {
     this.renderer = new Renderer();
     this.renderer.on(RendererEvent.READY, this.onRendererReady);
+    this.renderer.on(RendererEvent.CLOSED, this.onRendererClosed);
     this.renderer.on(RendererEvent.TIMELINE_INFO_UPDATE, this.onRendererTimelineInfoUpdate);
     this.renderer.on(RendererEvent.BOARD_INFO_UPDATE, this.onRendererBoardInfoUpdate);
     this.renderer.on(RendererEvent.IO_STATUS_UPDATE, this.onRendererIOStatusUpdate);
@@ -410,6 +411,8 @@ export default class Main {
   }
 
   onRendererReady = () => {
+    console.info('renderer ready');
+
     // Force an initial data update to the renderer
     this.onOutputsChanged();
     this.onInputsChanged();
@@ -435,6 +438,16 @@ export default class Main {
         console.log('runBoard:', runBoard);
         this.store.dispatch(runBoardAction(runBoard));
       }
+    }
+  }
+
+  onRendererClosed = () => {
+    if (this.renderer && this.currentProjectFilePath) {
+      console.log('renderer closed, relaunching...');
+      if (this.mainWindow) {
+        this.mainWindow.send(APP_WARNING, 'Engine crashed, relaunching...');
+      }
+      this.renderer.launch();
     }
   }
 
