@@ -1,4 +1,5 @@
 import EventEmitter from 'events';
+import { EOL } from 'os';
 
 import { getCompiledScriptPath } from '../lib/fileSystem';
 
@@ -13,48 +14,58 @@ export default class Script extends EventEmitter {
   _hasBeat = false;
   _hasInput = false;
   _hash = null;
-  
+
   constructor(sourceScript) {
     super();
+
     this.update(sourceScript);
   }
-  
-  update = (sourceScript) => {
+
+  update(sourceScript) {
     const {
       id,
       devices,
-      previewTempo,
+      devicesGroups,
+      tempo,
       hash,
     } = sourceScript;
-    
+
     this._id = id;
     this._hash = hash;
-    this._tempo = Number(previewTempo);
-    
-    this.setDevices(devices);
-    this.setScriptInstanceAndFlags(id);
+    this._tempo = Number(tempo);
+
+    this._setDevices(devices, devicesGroups);
+    this._setScriptFlags(id);
 
     this.emit('updated');
   }
-  
-  setDevices = (devices) => {
+
+  _setDevices(devices) {
     // Guard
     if (!devices) {
       this._devices = [];
       return;
     }
-    this._devices = devices.map(({id}) => id);
+    this._devices = devices.map(({ device }) => device);
   }
-  
-  setScriptInstanceAndFlags = (id) => {
+
+  _handleError(err) {
+    console.error(err);
+
+    const message = err.stack.split('\n').slice(1, 5).join('\n');
+
+    this.emit('load_error', { message, script: this.id });
+  }
+
+  _setScriptFlags(id) {
     const scriptPath = getCompiledScriptPath(id);
-    
+
     // clear existing cached module before attempting load
     delete require.cache[scriptPath];
-    
+
     try {
       const scriptInstance = new (require(scriptPath))();
-      
+
       this._hasStart = typeof scriptInstance.start === 'function';
       this._hasLeadInFrame = typeof scriptInstance.leadInFrame === 'function';
       this._hasFrame = typeof scriptInstance.frame === 'function';
@@ -62,65 +73,72 @@ export default class Script extends EventEmitter {
       this._hasBeat = typeof scriptInstance.beat === 'function';
       this._hasInput = typeof scriptInstance.input === 'function';
     } catch (e) {
-      console.error(e);
+      this._handleError(e);
     }
   }
 
-  getInstance = () => {
+  getInstance(...constructorArgs) {
     const scriptPath = getCompiledScriptPath(this._id);
-    const instance = new (require(scriptPath))();
-    return instance;
+
+    try {
+      const instance = new (require(scriptPath))(...constructorArgs);
+      return instance;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }
-  
+
   get id() {
     return this._id;
   }
-  
+
   get tempo() {
     return this._tempo;
   }
-  
+
   get devices() {
     return this._devices;
   }
-  
+
   get hasStart() {
     return this._hasStart;
   }
-  
+
   get hasLeadInFrame() {
     return this._hasLeadInFrame;
   }
-  
+
   get hasFrame() {
     return this._hasFrame;
   }
-  
+
   get hasLeadOutFrame() {
     return this._hasLeadOutFrame;
   }
-  
+
   get hasBeat() {
     return this._hasBeat;
   }
-  
+
   get hasInput() {
     return this._hasInput;
   }
-  
+
   get hash() {
     return this._hash;
   }
-  
-  destroy = () => {
+
+  destroy() {
     this._id = null;
-    this._tempo = 0;
-    this._devices = [];
-    this._hasSetup = false;
-    this._hasStart = false;
-    this._hasFrame = false;
-    this._hasBeat = false;
-    this._hasInput = false;
+    this._tempo = null;
+    this._devices = null;
+    this._hasStart = null;
+    this._hasLeadInFrame = null;
+    this._hasFrame = null;
+    this._hasLeadOutFrame = null;
+    this._hasBeat = null;
+    this._hasInput = null;
     this._hash = null;
   }
 }

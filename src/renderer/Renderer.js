@@ -1,4 +1,5 @@
 import Ticker from './lib/Ticker';
+import RootDeviceRenderer from './rendering/renderers/root/RootDeviceRenderer';
 import RootScriptRenderer from './rendering/renderers/root/RootScriptRenderer';
 import RootTimelineRenderer from './rendering/renderers/root/RootTimelineRenderer';
 import RootBoardRenderer from './rendering/renderers/root/RootBoardRenderer';
@@ -14,465 +15,575 @@ import DmxDevice from './rendering/DmxDevice';
 import IldaDevice from './rendering/IldaDevice';
 import DmxDeviceProxy from './rendering/DmxDeviceProxy';
 import IldaDeviceProxy from './rendering/IldaDeviceProxy';
+import MidiDevice from './rendering/MidiDevice';
+import MidiDeviceProxy from './rendering/MidiDeviceProxy';
+import { IO_DMX, IO_ILDA, IO_MIDI } from '../common/js/constants/io';
+import { READY } from './events/OutputEvent';
+import AudioOutput from './outputs/AudioOutput';
 
 export default class Renderer {
-  outputs = {};
-  inputs = {};
-  devices = {};
-  scripts = {};
-  timelines = {};
-  boards = {};
-  medias = {};
-  currentScript = null;
-  currentTimeline = null;
-  currentBoard = null;
-  ticker = null;
-  playing = false;
-  providers = null;
-  renderDelay = (1 / 40) * 1000; // @TODO configurable?
-  frameTime = 0;
-  ioUpdateTimer = null;
-  
+  _outputs = {};
+  _inputs = {};
+  _devices = {};
+  _scripts = {};
+  _timelines = {};
+  _boards = {};
+  _medias = {};
+  _currentDevice = null;
+  _currentScript = null;
+  _currentTimeline = null;
+  _currentBoard = null;
+  _ticker = null;
+  _currentTimelinePlaying = false;
+  _providers = null;
+  _renderDelay = (1 / 40) * 1000; // @TODO configurable?
+  _frameTime = 0;
+  _ioUpdateTimer = null;
+
   constructor() {
-    this.providers = {
-      getOutput: this.getOutput,
-      getScript: this.getScript,
-      getScripts: this.getScripts,
-      getDevices: this.getDevices,
-      getTimeline: this.getTimeline,
-      getBoard: this.getBoard,
-      getMedia: this.getMedia,
+    this._providers = {
+      getOutput: this._getOutput.bind(this),
+      getScript: this._getScript.bind(this),
+      getScripts: this._getScripts.bind(this),
+      getDevice: this._getDevice.bind(this),
+      getDevices: this._getDevices.bind(this),
+      getTimeline: this._getTimeline.bind(this),
+      getBoard: this._getBoard.bind(this),
+      getMedia: this._getMedia.bind(this),
     }
-    
-    process.on('SIGTERM', this.onSigTerm);
-    process.on('message', this.onMessage);
 
-    this.ioUpdateTimer = setInterval(this.updateIOStatus, 3000);
+    process.on('SIGTERM', this._onSigTerm.bind(this));
+    process.on('message', this._onMessage.bind(this));
 
-    this.send('ready');
+    this._ioUpdateTimer = setInterval(this._updateIOStatus.bind(this), 3000);
+
+    this._send('ready');
   }
-  
-  onSigTerm = () => {
-    this.destroy();
+
+  _onSigTerm() {
+    this._destroy();
     process.exit();
   }
-  
-  destroy = () => {
-    if (this.ioUpdateTimer) {
-      clearInterval(this.ioUpdateTimer);
+
+  _destroy() {
+    if (this._ioUpdateTimer) {
+      clearInterval(this._ioUpdateTimer);
     }
-    if (this.inputs) {
-      Object.values(this.inputs).forEach((input) => input.destroy());
+    if (this._inputs) {
+      Object.values(this._inputs).forEach((input) => input.destroy());
     }
-    if (this.outputs) {
-      Object.values(this.outputs).forEach((output) => output.destroy());
+    if (this._outputs) {
+      Object.values(this._outputs).forEach((output) => output.destroy());
     }
-    
-    this.inputs = null;
-    this.outputs = null;
+
+    this._inputs = null;
+    this._outputs = null;
   }
-  
-  onMessage = (message) => {
+
+  _onMessage(message) {
     if ('updateOutputs' in message) {
       const { updateOutputs } = message;
-      this.updateOutputs(updateOutputs);
+      this._updateOutputs(updateOutputs);
     } else if ('updateInputs' in message) {
       const { updateInputs } = message;
-      this.updateInputs(updateInputs);
+      this._updateInputs(updateInputs);
     } else if ('updateDevices' in message) {
       const { updateDevices } = message;
-      this.updateDevices(updateDevices);
+      this._updateDevices(updateDevices);
     } else if ('updateScripts' in message) {
       const { updateScripts } = message;
-      this.updateScripts(updateScripts);
+      this._updateScripts(updateScripts);
     } else if ('updateMedias' in message) {
       const { updateMedias } = message;
-      this.updateMedias(updateMedias);
+      this._updateMedias(updateMedias);
     } else if ('updateTimelines' in message) {
       const { updateTimelines } = message;
-      this.updateTimelines(updateTimelines);
+      this._updateTimelines(updateTimelines);
     } else if ('updateBoards' in message) {
       const { updateBoards } = message;
-      this.updateBoards(updateBoards);
-    } else if ('previewScript' in message) {
-      const { previewScript } = message;
-      this.previewScript(previewScript);
+      this._updateBoards(updateBoards);
+    } else if ('runDevice' in message) {
+      const { runDevice } = message;
+      this._runDevice(runDevice);
+    } else if ('runScript' in message) {
+      const { runScript } = message;
+      this._runScript(runScript);
     } else if ('runTimeline' in message) {
       const { runTimeline } = message;
-      this.runTimeline(runTimeline);
+      this._runTimeline(runTimeline);
     } else if ('runBoard' in message) {
       const { runBoard } = message;
-      this.runBoard(runBoard);
-    } else if ('timelineInfoUser' in message) {
-      const { timelineInfoUser } = message;
-      this.updateTimelineInfo(timelineInfoUser);
-    } else if ('boardInfoUser' in message) {
-      const { boardInfoUser } = message;
-      this.updateBoardInfo(boardInfoUser);
+      this._runBoard(runBoard);
+    } else if ('updateTimelineInfo' in message) {
+      const { updateTimelineInfo } = message;
+      this._updateTimelineInfo(updateTimelineInfo);
+    } else if ('updateBoardInfo' in message) {
+      const { updateBoardInfo } = message;
+      this._updateBoardInfo(updateBoardInfo);
     }
   }
-  
-  updateOutputs = (data) => {
-    this.outputs = hashComparator(
-      data,
-      this.outputs,
-      (item) => new Output(item),
-      (output, item) => output.update(item),
-      (output) => output.destroy()
-    );
-    // console.log('RENDERER updateOutputs', this.outputs);
 
-    this.updateIOStatus();
-  }
-  
-  updateInputs = (data) => {
-    this.inputs = hashComparator(
+  _updateOutputs(data) {
+    this._outputs = hashComparator(
       data,
-      this.inputs,
-      (item) => new Input(item, this.onInput),
+      this._outputs,
+      (item) => {
+        const output = new Output(item);
+        output.on(READY, this._onOutputReady.bind(this, output));
+        return output;
+      },
+      (output, item) => output.update(item),
+      (output) => {
+        output.removeAllListeners();
+        output.destroy();
+      }
+    );
+    // console.log('RENDERER _updateOutputs', this._outputs);
+
+    this._updateIOStatus();
+  }
+
+  _updateInputs(data) {
+    this._inputs = hashComparator(
+      data,
+      this._inputs,
+      (item) => new Input(item, this._onInput.bind(this)),
       (input, item) => input.update(item),
       (input) => input.destroy()
     );
-    // console.log('RENDERER updateInputs', this.inputs);
+    // console.log('RENDERER _updateInputs', this._inputs);
   }
-  
-  updateDevices = (data) => {
-    this.devices = hashComparator(
+
+  _updateDevices(data) {
+    this._devices = hashComparator(
       data,
-      this.devices,
+      this._devices,
       (item) => {
-        if (item.type === 'dmx') {
-          return new DmxDevice(this.providers, item);
-        } else if (item.type === 'ilda') {
-          return new IldaDevice(this.providers, item);
+        if (item.type === IO_DMX) {
+          return new DmxDevice(this._providers, item);
+        } else if (item.type === IO_ILDA) {
+          return new IldaDevice(this._providers, item);
+        } else if (item.type === IO_MIDI) {
+          return new MidiDevice(this._providers, item);
         }
         throw new Error(`Unknown device type "${item.type}"`);
       },
       (device, item) => device.update(item),
       (device) => device.destroy()
     );
-    // console.log('RENDERER updateDevices', this.devices);
+    // console.log('RENDERER _updateDevices', this._devices);
   }
-  
-  updateScripts = (data) => {
-    this.scripts = hashComparator(
+
+  _updateScripts(data) {
+    this._scripts = hashComparator(
       data,
-      this.scripts,
-      (item) => new Script(item),
+      this._scripts,
+      (item) => {
+        const script = new Script(item);
+        script.on('load_error', this._onScriptError.bind(this))
+        return script;
+      },
       (script, item) => script.update(item),
-      (script) => script.destroy()
+      (script) => {
+        script.removeAllListeners();
+        script.destroy();
+      }
     );
-    // console.log('RENDERER updateScripts', this.scripts);
+    // console.log('RENDERER _updateScripts', this._scripts);
   }
-  
-  updateTimelines = (data) => {
-    this.timelines = hashComparator(
+
+  _updateTimelines(data) {
+    this._timelines = hashComparator(
       data,
-      this.timelines,
+      this._timelines,
       (item) => new Timeline(item),
       (timeline, item) => timeline.update(item),
       (timeline) => timeline.destroy()
     );
-    // console.log('RENDERER updateTimelines', this.timelines);
+    // console.log('RENDERER _updateTimelines', this._timelines);
   }
-  
-  updateBoards = (data) => {
-    this.boards = hashComparator(
+
+  _updateBoards(data) {
+    this._boards = hashComparator(
       data,
-      this.boards,
+      this._boards,
       (item) => new Board(item),
       (board, item) => board.update(item),
       (board) => board.destroy()
     );
-    // console.log('RENDERER updateBoards', this.boards);
+    // console.log('RENDERER _updateBoards', this._boards);
   }
-  
-  updateMedias = (data) => {
-    this.medias = hashComparator(
+
+  _updateMedias(data) {
+    this._medias = hashComparator(
       data,
-      this.medias,
-      (item) => new Media(this.providers, item),
+      this._medias,
+      (item) => new Media(this._providers, item),
       (media, item) => media.update(item),
       (media) => media.destroy()
     );
-    // console.log('RENDERER updateMedias', this.medias);
+    // console.log('RENDERER _updateMedias', this._medias);
+
+    this._notifyMediasToOutputs();
   }
-  
-  getOutput = (outputId) => {
-    return this.outputs[outputId];
+
+  _onOutputReady(output) {
+    if (output.outputInstance instanceof AudioOutput) {
+      this._notifyMediasToOutputs();
+    }
   }
-  
-  getScript = (scriptId) => {
-    return this.scripts[scriptId];
-  }
-  
-  getScripts = (scriptsList) => {
-    return scriptsList.map((id) => {
-      return this.scripts[id];
-    });
-  }
-  
-  getTimeline = (timelineId) => {
-    return this.timelines[timelineId];
-  }
-  
-  getBoard = (boardId) => {
-    return this.boards[boardId];
-  }
-  
-  getDevices = (devicesList) => {
-    return devicesList.map((id) => {
-      const device = this.devices[id];
-      if (device.type === 'dmx') {
-        return new DmxDeviceProxy(device);
-      } else if (device.type === 'ilda') {
-        return new IldaDeviceProxy(device);
+
+  _notifyMediasToOutputs() {
+    const outputsMedias = Object.values(this._medias).reduce((data, media) => {
+      // Guard
+      if (!media.output) {
+        return data;
       }
-      return null;
+      return {
+        ...data,
+        [media.output.id]: {
+          ...data[media.output.id],
+          [media.id]: media.file,
+        }
+      }
+    }, {});
+
+    Object.entries(outputsMedias).forEach(([outputId, media]) => {
+      const output = this._getOutput(outputId);
+      if (output) {
+        output.outputInstance.send({ media });
+      }
     });
   }
-  
-  getMedia = (mediaId) => {
-    const media = this.medias[mediaId];
+
+  _getOutput(outputId) {
+    return this._outputs[outputId];
+  }
+
+  _getScript(scriptId) {
+    return this._scripts[scriptId];
+  }
+
+  _getScripts(scriptsList) {
+    return scriptsList.map((id) => {
+      return this._getScript(id);
+    });
+  }
+
+  _getTimeline(timelineId) {
+    return this._timelines[timelineId];
+  }
+
+  _getBoard(boardId) {
+    return this._boards[boardId];
+  }
+
+  _getDevice(deviceId) {
+    const device = this._devices[deviceId];
+    if (device.type === IO_DMX) {
+      return new DmxDeviceProxy(device);
+    } else if (device.type === IO_ILDA) {
+      return new IldaDeviceProxy(device);
+    } else if (device.type === IO_MIDI) {
+      return new MidiDeviceProxy(device);
+    }
+    return null;
+  }
+
+  _getDevices(devicesList) {
+    return devicesList.map((id) => {
+      return this._getDevice(id);
+    });
+  }
+
+  _getMedia(mediaId) {
+    const media = this._medias[mediaId];
     if (media) {
       return new MediaProxy(media);
     }
     return null;
   }
-  
-  previewScript = (id) => {
-    if (id === null || (this.currentScript && this.currentScript.script.id !== id)) {
-      if (this.currentScript) {
-        this.currentScript.destroy();
-        this.currentScript = null;
+
+  _runDevice(id) {
+    if (id === null || (this._currentDevice && this._currentDevice.device.id !== id)) {
+      if (this._currentDevice) {
+        this._currentDevice.destroy();
+        this._currentDevice = null;
       }
     }
-    
-    this.resetAll();
-    
+
     if (id !== null) {
-      const renderer = new RootScriptRenderer(this.providers, id);
-      this.currentScript = renderer;
+      const renderer = new RootDeviceRenderer(this._providers, id);
+      this._currentDevice = renderer;
     }
 
-    this.updateTicker();
-    
-    console.log('RENDERER previewScript', id);
+    this._updateTicker();
+
+    console.log('RENDERER _runDevice', id);
   }
-  
-  runTimeline = (id) => {
-    if (id === null || (this.currentTimeline && this.currentTimeline.id !== id)) {
-      if (this.currentTimeline) {
-        this.currentTimeline.destroy();
-        this.currentTimeline = null;
+
+  _runScript(id) {
+    if (id === null || (this._currentScript && this._currentScript.script.id !== id)) {
+      if (this._currentScript) {
+        this._currentScript.removeAllListeners();
+        this._currentScript.destroy();
+        this._currentScript = null;
       }
     }
-    
-    this.resetAll();
-    
+
+    this._resetAll();
+
     if (id !== null) {
-      const renderer = new RootTimelineRenderer(this.providers, id, this.onTimelineEnded);
-      this.currentTimeline = renderer;
+      const renderer = new RootScriptRenderer(this._providers, id);
+      renderer.on('script_error', this._onScriptError.bind(this))
+      renderer.on('script_log', this._onScriptLog.bind(this))
+      this._currentScript = renderer;
     }
 
-    this.updateTicker(false);
-    
-    console.log('RENDERER runTimeline', id);
+    this._updateTicker();
+
+    console.log('RENDERER _runScript', id);
   }
-  
-  runBoard = (id) => {
-    if (id === null || (this.currentBoard && this.currentBoard.id !== id)) {
-      if (this.currentBoard) {
-        this.currentBoard.destroy();
-        this.currentBoard = null;
+
+  _runTimeline(id) {
+    if (id === null || (this._currentTimeline && this._currentTimeline.id !== id)) {
+      if (this._currentTimeline) {
+        this._currentTimeline.removeAllListeners();
+        this._currentTimeline.destroy();
+        this._currentTimeline = null;
       }
+      this._currentTimelinePlaying = false;
     }
-    
-    this.resetAll();
-    
+
+    this._resetAll();
+    this._outputAll();
+
     if (id !== null) {
-      const renderer = new RootBoardRenderer(this.providers, id);
-      this.currentBoard = renderer;
+      const renderer = new RootTimelineRenderer(this._providers, id, this._onTimelineEnded.bind(this));
+      renderer.on('end', this._onTimelineEnded.bind(this));
+      renderer.on('script_error', this._onScriptError.bind(this))
+      renderer.on('script_log', this._onScriptLog.bind(this))
+      this._currentTimeline = renderer;
     }
 
-    this.updateTicker();
-    
-    console.log('RENDERER runBoard', id);
+    this._updateTicker();
+
+    console.log('RENDERER _runTimeline', id);
   }
-  
-  updateTicker = (start = true) => {
-    if (this.ticker) {
-      this.ticker.destroy();
-      this.ticker = null;
+
+  _runBoard(id) {
+    if (id === null || (this._currentBoard && this._currentBoard.id !== id)) {
+      if (this._currentBoard) {
+        this._currentBoard.removeAllListeners();
+        this._currentBoard.destroy();
+        this._currentBoard = null;
+      }
     }
 
-    this.frameTime = 0;
-    
-    if (this.currentScript || this.currentTimeline || this.currentBoard) {
-      if (!this.ticker) {
-        this.ticker = new Ticker(this.tickHandler);
-        if (start) {
-          this.ticker.start();
-        }
+    this._resetAll();
+    this._outputAll();
+
+    if (id !== null) {
+      const renderer = new RootBoardRenderer(this._providers, id);
+      renderer.on('script_error', this._onScriptError.bind(this))
+      renderer.on('script_log', this._onScriptLog.bind(this))
+      this._currentBoard = renderer;
+    }
+
+    this._updateTicker();
+
+    console.log('RENDERER _runBoard', id);
+  }
+
+  _onScriptError(info) {
+    this._send({ scriptError: info });
+  }
+
+  _onScriptLog(log) {
+    this._send({ scriptLog: log });
+  }
+
+  _updateTicker() {
+    if (this._currentDevice || this._currentScript || this._currentTimeline || this._currentBoard) {
+      if (!this._ticker) {
+        console.log('RENDERER _updateTicker create');
+
+        this._frameTime = 0;
+        this._ticker = new Ticker(this._tickHandler.bind(this));
+        this._ticker.start();
+      }
+    } else {
+      if (this._ticker) {
+        console.log('RENDERER _updateTicker destroy');
+
+        this._ticker.destroy();
+        this._ticker = null;
       }
     }
   }
 
-  onTimelineEnded = () => {
-    this.updateTimelinePlaybackStatus(false);
-    this.send({
-      'timelineInfo': {
-        'playing': false,
-        'position': this.currentTimeline.currentTime,
+  _onTimelineEnded() {
+    this._updateTimelinePlaybackStatus(false);
+    this._send({
+      timelineInfo: {
+        playing: false,
+        position: this._currentTimeline.currentTime,
       },
     });
   }
-  
-  updateTimelineInfo = (data) => {
-    console.log('Renderer.updateTimelineInfo', data);
-    
-    if (this.currentTimeline) {
+
+  _updateTimelineInfo(data) {
+    console.log('RENDERER _updateTimelineInfo', data);
+
+    if (this._currentTimeline) {
       const { playing, position } = data;
       if (typeof playing !== 'undefined') {
-        this.updateTimelinePlaybackStatus(playing);
+        this._updateTimelinePlaybackStatus(playing);
       }
       if (typeof position !== 'undefined') {
-        this.resetDevices();
-        this.currentTimeline.setPosition(position);
+        this._resetDevices();
+        this._currentTimeline.setPosition(position);
       }
-      this.send({
-        'timelineInfo': data,
-      });
-    }
-  }
-  
-  updateTimelinePlaybackStatus = (playing) => {
-    if (playing && !this.ticker.running) {
-      this.currentTimeline.notifyPlay();
-      
-      this.playing = true;
-      this.ticker.start();
-    } else if (!playing && this.ticker.running) {
-      this.playing = false;
-      this.ticker.stop();
-      
-      this.currentTimeline.notifyStop();
-      this.outputAll();
-    }
-  }
-  
-  updateBoardInfo = (data) => {
-    console.log('Renderer.updateBoardInfo', data);
-    
-    if (this.currentBoard) {
-      const { activeItems } = data;
-      if (typeof activeItems !== 'undefined') {
-        this.currentBoard.setActiveItems(activeItems);
-      }
-      this.send({
-        'boardInfo': data
+      this._send({
+        timelineInfo: data,
       });
     }
   }
 
-  updateIOStatus = () => {
+  _updateTimelinePlaybackStatus(playing) {
+    console.log('RENDERER _updateTimelinePlaybackStatus', playing);
+
+    if (playing && !this._currentTimelinePlaying) {
+      this._currentTimeline.notifyPlay();
+      this._currentTimelinePlaying = true;
+    } else if (!playing && this._currentTimelinePlaying) {
+      this._currentTimelinePlaying = false;
+      this._currentTimeline.notifyStop();
+
+      this._outputAll();
+    }
+  }
+
+  _updateBoardInfo(data) {
+    console.log('Renderer._updateBoardInfo', data);
+
+    if (this._currentBoard) {
+      const { activeItems } = data;
+      if (typeof activeItems !== 'undefined') {
+        this._currentBoard.setActiveItems(activeItems);
+      }
+      this._send({
+        boardInfo: data
+      });
+    }
+  }
+
+  _updateIOStatus() {
     const ioStatus = {
-      ...Object.values(this.inputs).reduce((obj, input) => {
+      ...Object.values(this._inputs).reduce((obj, input) => {
         obj[input.id] = input.inputInstance.refreshAndGetStatus();
         return obj;
       }, {}),
-      ...Object.values(this.outputs).reduce((obj, output) => {
+      ...Object.values(this._outputs).reduce((obj, output) => {
         obj[output.id] = output.outputInstance.refreshAndGetStatus();
         return obj;
       }, {}),
     }
-    // console.log('RENDERER updateIOStatus', ioStatus);
-    this.send({
+
+    this._send({
       ioStatus,
     });
   }
-  
-  send = (data) => {
+
+  _send(data) {
+    if (!process.connected) {
+      console.error('_send() failed; not connected to main process!');
+      return;
+    }
     process.send(data);
   }
 
-  tickHandler = (delta, initial = false) => {
-    if (this.currentScript) {
-      this.currentScript.tick(delta);
+  _tickHandler(delta, initial = false) {
+    if (this._currentScript) {
+      this._currentScript.tick(delta);
     }
-    if (this.currentTimeline) {
-      this.currentTimeline.tick(delta);
+    if (this._currentTimeline && this._currentTimelinePlaying) {
+      this._currentTimeline.tick(delta);
     }
-    if (this.currentBoard) {
-      this.currentBoard.tick(delta);
-    }
-    
-    if (this.frameTime >= this.renderDelay || initial) {
-      const diff = this.frameTime - this.renderDelay;
-      this.tickerFrame(diff);
-      this.frameTime = 0;
+    if (this._currentBoard) {
+      this._currentBoard.tick(delta);
     }
 
-    this.frameTime += delta;
-  }
-  
-  tickerFrame = (delta) => {
-    this.resetDevices();
-    
-    if (this.currentScript) {
-      this.currentScript.frame(delta);
+    if (this._frameTime >= this._renderDelay || initial) {
+      const diff = this._frameTime - this._renderDelay;
+      this._tickerFrame(diff);
+      this._frameTime = 0;
     }
-    if (this.currentTimeline) {
-      this.currentTimeline.frame(delta);
-      this.send({
+
+    this._frameTime += delta;
+  }
+
+  _tickerFrame(delta) {
+    this._resetDevices();
+    this._resetMedias();
+
+    if (this._currentScript) {
+      this._currentScript.frame(delta);
+    }
+    if (this._currentTimeline && this._currentTimelinePlaying) {
+      this._currentTimeline.frame(delta);
+      this._send({
         timelineInfo: {
-          position: this.currentTimeline.currentTime,
-          playing: this.playing,
+          position: this._currentTimeline.currentTime,
+          playing: this._currentTimelinePlaying,
         },
       });
     }
-    if (this.currentBoard) {
-      this.currentBoard.frame(delta);
-      this.send({
+    if (this._currentBoard) {
+      this._currentBoard.frame(delta);
+      this._send({
         boardInfo: {
-          activeItems: this.currentBoard.activeItems,
-          itemsStatus: this.currentBoard.itemsStatus,
+          activeItems: this._currentBoard.activeItems,
+          itemsStatus: this._currentBoard.itemsStatus,
         },
       });
     }
-    
-    this.outputAll();
-  }
-  
-  onInput = (type, data) => {
-    if (this.currentScript) {
-      this.currentScript.input(type, data);
+    if (this._currentDevice) {
+      this._currentDevice.frame(delta);
     }
-    if (this.currentTimeline) {
-      this.currentTimeline.input(type, data);
+
+    this._outputAll();
+  }
+
+  _onInput(type, data) {
+    if (this._currentScript) {
+      this._currentScript.input(type, data);
     }
-    if (this.currentBoard) {
-      this.currentBoard.input(type, data);
+    if (this._currentTimeline && this._currentTimelinePlaying) {
+      this._currentTimeline.input(type, data);
+    }
+    if (this._currentBoard) {
+      this._currentBoard.input(type, data);
     }
   }
-  
-  resetAll = () => {
-    this.resetDevices();
-    this.resetMedias();
+
+  _resetAll() {
+    this._resetDevices();
+    this._resetMedias();
   }
-  
-  resetDevices = () => {
-    Object.values(this.devices).forEach((device) => device.reset());
+
+  _resetDevices() {
+    Object.values(this._devices).forEach((device) => device.reset());
   }
-  
-  resetMedias = () => {
-    Object.values(this.medias).forEach((media) => media.reset());
+
+  _resetMedias() {
+    Object.values(this._medias).forEach((media) => media.reset());
   }
-  
-  outputAll = () => {
-    Object.values(this.devices).forEach((device) => device.sendDataToOutput());
-    Object.values(this.medias).forEach((media) => media.sendDataToOutput());
-    
-    Object.values(this.outputs).forEach((output) => output.flush());
+
+  _outputAll() {
+    Object.values(this._devices).forEach((device) => device.sendDataToOutput());
+    Object.values(this._medias).forEach((media) => media.sendDataToOutput());
+
+    Object.values(this._outputs).forEach((output) => output.flush());
   }
 }

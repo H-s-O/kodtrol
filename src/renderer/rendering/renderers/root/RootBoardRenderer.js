@@ -2,6 +2,7 @@ import BaseRootRenderer from './BaseRootRenderer';
 import ScriptRenderer from '../items/ScriptRenderer';
 // import AudioRenderer from '../items/AudioRenderer';
 import timeToPPQ from '../../../lib/timeToPPQ';
+import { ITEM_SCRIPT, ITEM_MEDIA } from '../../../../common/js/constants/items';
 
 export default class RootBoardRenderer extends BaseRootRenderer {
   _board = null;
@@ -9,21 +10,21 @@ export default class RootBoardRenderer extends BaseRootRenderer {
   _audios = null;
   _activeItems = {};
   _itemsMap = null;
-  
+
   constructor(providers, boardId) {
     super(providers);
-    
+
     this._setBoardAndItems(boardId);
   }
-  
-  _setBoardAndItems = (boardId) => {
+
+  _setBoardAndItems(boardId) {
     this._board = this._providers.getBoard(boardId);
-    this._board.on('updated', this._onBoardUpdated);
+    this._board.on('updated', this._onBoardUpdated.bind(this));
 
     this._build();
   }
 
-  _onBoardUpdated = () => {
+  _onBoardUpdated() {
     // "Rebuild" board
 
     Object.values(this._blocks).forEach((block) => block.instance.destroy());
@@ -34,7 +35,7 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     this._build();
   }
 
-  _build = () => {
+  _build() {
     // "Prepare" data
     const layersById = this._board.layers.reduce((obj, layer) => {
       return {
@@ -42,21 +43,24 @@ export default class RootBoardRenderer extends BaseRootRenderer {
         [layer.id]: layer,
       }
     }, {});
-    
+
     // Extract board items
     const boardItems = this._board.items.sort((a, b) => {
       return layersById[a.layer].order - layersById[b.layer].order;
     });
-    
+
     this._blocks = boardItems
-      .filter((item) => 'script' in item)
+      .filter(({ type }) => type === ITEM_SCRIPT)
       .reduce((obj, block) => {
+        const instance = new ScriptRenderer(this._providers, block.script);
+        instance.on('script_error', this._forwardEvent('script_error', { block: block.id, board: this._board.id }));
+        instance.on('script_log', this._forwardEvent('script_log', { block: block.id, board: this._board.id }));
+
         return {
           ...obj,
           [block.id]: {
             ...block,
-            instance: new ScriptRenderer(this._providers, block.script),
-            localBeatPos: -1,
+            instance,
             inTime: null,
             outTime: null,
             blockPercent: null,
@@ -64,9 +68,9 @@ export default class RootBoardRenderer extends BaseRootRenderer {
           },
         };
       }, {});
-      
+
     this._audios = boardItems
-      .filter((item) => 'file' in item)
+      .filter(({ type }) => type === ITEM_MEDIA)
       .reduce((obj, audio) => {
         return {
           ...obj,
@@ -77,11 +81,11 @@ export default class RootBoardRenderer extends BaseRootRenderer {
           },
         };
       }, {});
-    
+
     const itemsMap = [
-        [], // blocks
-        [], // medias
-       ];
+      [], // blocks
+      [], // medias
+    ];
     for (let id in this._blocks) {
       itemsMap[0].push(id);
     }
@@ -90,11 +94,11 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     }
     this._itemsMap = itemsMap;
   }
-  
+
   get board() {
     return this._board;
   }
-  
+
   get activeItems() {
     return this._activeItems;
   }
@@ -112,11 +116,11 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     return status;
   }
 
-  _getRenderingTempo = () => {
+  _getRenderingTempo() {
     return this._board.tempo;
   }
 
-  setActiveItems = (activeItems) => {
+  setActiveItems(activeItems) {
     const currentTime = this._currentTime;
 
     Object.entries(this._blocks).forEach(([id, block]) => {
@@ -142,7 +146,7 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     this._activeItems = activeItems;
   }
 
-  _runFrame = (frameTime) => {
+  _runFrame(frameTime) {
     const boardItems = this._getBoardRunningItems();
     if (boardItems === null) {
       // Nothing to render
@@ -173,16 +177,16 @@ export default class RootBoardRenderer extends BaseRootRenderer {
           currentTime,
           blockPercent,
         };
-  
+
         block.instance.render(currentTime, blockInfo);
-        
+
         block.blockPercent = blockPercent;
       } else {
         block.active = false;
         block.blockPercent = null;
       }
     }
-    
+
     // const medias = boardItems[1];
     // const mediaCount = medias.length;
     // for (let i = 0; i < mediaCount; i++) {
@@ -191,47 +195,67 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     // }
   }
 
-  _runBeat = (beatPos) => {
+  _runBeat(beatTime, previousBeatTime) {
     const boardItems = this._getBoardRunningItems();
     if (boardItems === null) {
       return;
     }
 
     const tempo = this._getRenderingTempo();
-    const currentTime = this._currentTime;
+
+    // @TODO handle global beat diff?
+    const currentBeatPos = timeToPPQ(beatTime, tempo);
 
     const blocks = boardItems[0];
     const blockCount = blocks.length;
     for (let i = 0; i < blockCount; i++) {
       const block = this._blocks[blocks[i]];
-      const localBeatPos = timeToPPQ(currentTime, tempo);
-      if (localBeatPos !== block.localBeatPos) {
-        block.instance.beat(beatPos, localBeatPos);
-        block.localBeatPos = localBeatPos;
+      const prevLocalBeatPos = timeToPPQ(previousBeatTime - block.inTime, tempo);
+      const currentLocalBeatPos = timeToPPQ(beatTime - block.inTime, tempo);
+      // Loop the difference between two positions; will act
+      // as catch-up in case some lag occurs
+      const diff = currentLocalBeatPos - prevLocalBeatPos;
+      for (let j = 0; j < diff; j++) {
+        block.instance.beat(currentBeatPos, prevLocalBeatPos + j);
       }
     }
   }
-  
-  _runInput = (type, data) => {
+
+  _runInput(type, data) {
     let change = false;
-    const updatedActiveItems = {...this._activeItems};
+    const updatedActiveItems = { ...this._activeItems };
     const triggerableItems = this._getBoardTriggerableItems();
     const triggerableBlocks = triggerableItems[0];
     const triggerableBlocksCount = triggerableBlocks.length;
     if (triggerableBlocksCount > 0) {
       for (let i = 0; i < triggerableBlocksCount; i++) {
         const block = this._blocks[triggerableBlocks[i]];
-        // @TODO midi_note
-        if (block.trigger === 'midi_cc') {
-          if (data[1] === parseInt(block.triggerSource)) {
-            const on = data[2] === 127;
-            console.log(data[1], data[2], on);
-            if (on) {
-              updatedActiveItems[block.id] = true;
-            } else {
-              delete updatedActiveItems[block.id];
+        if (type === 'midi') {
+          if (block.trigger === 'midi_cc') {
+            if (data[1] === parseInt(block.triggerSource)) {
+              const on = data[2] === 127;
+              console.log(data[1], data[2], on); //@TODO cleanup
+              if (on) {
+                updatedActiveItems[block.id] = true;
+              } else {
+                delete updatedActiveItems[block.id];
+              }
+              change = true
             }
-            change = true
+          }
+          // @TODO midi_note
+        } else if (type === 'osc') {
+          if (block.trigger === 'osc_adr_arg') {
+            if (data.address === block.triggerSource) {
+              const on = data.args && data.args.length > 0 ? !!data.args[0].value : false;
+              console.log(data.address, data.args, on); //@TODO cleanup
+              if (on) {
+                updatedActiveItems[block.id] = true;
+              } else {
+                delete updatedActiveItems[block.id];
+              }
+              change = true
+            }
           }
         }
       }
@@ -244,7 +268,7 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     if (boardItems === null) {
       return;
     }
-    
+
     const blocks = boardItems[0];
     const blockCount = blocks.length;
     for (let i = 0; i < blockCount; i++) {
@@ -252,8 +276,8 @@ export default class RootBoardRenderer extends BaseRootRenderer {
       block.instance.input(type, data);
     }
   }
-  
-  _getBoardRunningItems = () => {
+
+  _getBoardRunningItems() {
     const itemsMap = this._itemsMap;
     const items = [
       itemsMap[0].filter((id) => this._blocks[id].active),
@@ -262,7 +286,7 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     return items;
   }
 
-  _getBoardTriggerableItems = () => {
+  _getBoardTriggerableItems() {
     const itemsMap = this._itemsMap;
     const items = [
       itemsMap[0].filter((id) => !!this._blocks[id].trigger),
@@ -270,26 +294,30 @@ export default class RootBoardRenderer extends BaseRootRenderer {
     return items;
   }
 
-  resetBlocks = () => {
+  resetBlocks() {
     Object.values(this._blocks).forEach((block) => block.instance.reset());
   }
 
-  // resetAudios = () => {
+  // resetAudios  () {
   //   Object.values(this._audios).forEach((audio) => audio.instance.reset());
   // }
 
-  destroy = () => {
+  destroy() {
     if (this._board) {
-      this._board.removeAllListeners();
+      this._board.removeAllListeners('updated');
     }
-    
-    Object.values(this._blocks).forEach((block) => block.instance.destroy());
 
+    Object.values(this._blocks).forEach((block) => {
+      block.instance.removeAllListeners();
+      block.instance.destroy();
+    });
+
+    this._board = null;
     this._blocks = null;
     // this._audios = null;
+    this._activeItems = null;
     this._itemsMap = null;
-    this._board = null;
 
-    // super.destroy(); // @TODO needs babel update
+    super.destroy();
   }
 }

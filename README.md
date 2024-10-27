@@ -1,12 +1,11 @@
 # Kodtrol
 ![Kodtrol screenshot](screenshot.png)
-
-(Curious to see what the project in this screenshot looks like? [Here it is](https://youtu.be/CueEGW6SlJ0).)
-
-# ❇️ A refactor is in progress before the first official beta. [See what's brewing on the-big-refactor branch](https://github.com/H-s-O/Kodtrol/tree/the-big-refactor).
+Above is a screenshot of a demo song project, [LOOK MUM NO COMPUTER - GRANDMA'S MONEY](https://youtu.be/CueEGW6SlJ0)  
+Other demos:
+- [Mr.Kitty - give/take](https://youtu.be/cN45Z7AZOg0)
+- [Ladytron - The Island](https://youtu.be/ogRdrisVTpc)
   
 # ⚠️ Note: this software is still in alpha stage. Use at your own risk; expect breaking changes without prior notice.
-There is no executable build yet. Still an Electron noob. See "Local development / run from source" below.
 
 ## Features roadmap (in no particular order)
 - [Open Fixture Library](https://open-fixture-library.org/) integration
@@ -14,20 +13,20 @@ There is no executable build yet. Still an Electron noob. See "Local development
 - MIDI timecode sync
 - Helpers Hub (where users can post their script helpers and share them)
 - Manual and docs on [kodtrol.com](http://kodtrol.com)
-- Display a nice first time "welcome" screen
 
 ## Local development / run from source
 
 **Requirements**
-- Node.js >= 10.x.x
-- npm >= 3.6.x
+- Node.js: ^18.0.0
+- npm: ^9.0.0
+- Linux only: `libasound2-dev` package
 
 Clone the repository and `cd` into it.  
 Then:
 ```
 npm install
-npm run rebuild
-npm run dev
+npm run build:addons
+npm run watch:renderer
 ```
 And in another terminal, run:
 ```
@@ -35,3 +34,13 @@ npm start
 ```
 Note that when starting the app the first time, you won't have an active project 
 preloaded yet. Just go to *File > Create project...* to create one.
+If all goes well, you should see the Welcome Screen allowing you to create a new project or open an existing one.
+
+## Local release build
+Make sure you have installed the requirements from *Local development* above, then:
+```
+npm install
+npm run build:addons
+npm run build-and-dist
+```
+The build will be generated in the `dist` folder.

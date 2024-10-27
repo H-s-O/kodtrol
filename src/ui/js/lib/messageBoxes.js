@@ -1,15 +1,12 @@
 import { remote } from 'electron';
 
-import isFunction from './isFunction';
-import { PROJECT_FILE_EXTENSION } from '../../../common/js/constants/app';
-
 const { dialog } = remote;
 
-export function deleteWarning(message, detail = undefined, callback) {
+export function deleteWarning(message, detail = null, callback) {
   // Handle two arguments call
-  if (isFunction(detail)) {
+  if (typeof detail === 'function') {
     callback = detail;
-    detail = undefined;
+    detail = null;
   }
 
   const response = dialog.showMessageBoxSync(remote.getCurrentWindow(), {
@@ -20,31 +17,27 @@ export function deleteWarning(message, detail = undefined, callback) {
     defaultId: 0,
     cancelId: 1,
     message,
-    detail,
+    detail: detail ? detail : undefined,
   });
   callback(response === 0)
 };
 
-export function importAudioFile() {
-  return dialog.showOpenDialogSync({
-    title: 'Import audio file',
-    filters: [
-      {
-        name: 'Audio files',
-        extensions: ['mp3', 'wav'],
-      },
-    ],
-  });
-}
+export function closeWarning(message, detail = null, callback) {
+  // Handle two arguments call
+  if (typeof detail === 'function') {
+    callback = detail;
+    detail = null;
+  }
 
-export function importProject() {
-  return dialog.showOpenDialogSync({
-    title: 'Import project',
-    filters: [
-      {
-        name: 'Kodtrol project files',
-        extensions: [PROJECT_FILE_EXTENSION],
-      },
+  const response = dialog.showMessageBoxSync(remote.getCurrentWindow(), {
+    type: 'warning',
+    buttons: [
+      'Close', 'Cancel',
     ],
+    defaultId: 0,
+    cancelId: 1,
+    message,
+    detail: detail ? detail : undefined,
   });
-}
+  callback(response === 0)
+};

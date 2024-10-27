@@ -1,34 +1,52 @@
-import * as IOStatus from '../../common/js/constants/io';
+import { IO_CONNECTED, IO_DISCONNECTED, IO_ACTIVITY } from '../../common/js/constants/io';
 
 export default class AbstractInput {
-    _status = null;
+  static RETRY_DELAY = 1000;
 
-    get status() {
-        return this._status;
-    }
+  _status = null;
+  _received = false;
 
-    refreshAndGetStatus = () => {
-        this._refreshStatus();
-        return this._status;
-    }
+  get status() {
+    return this._status;
+  }
 
-    _refreshStatus = () => {
-        // implement in subclass
-    }
+  refreshAndGetStatus() {
+    this._refreshStatus();
+    return this._status;
+  }
 
-    _setStatusInitial = () => {
-        this._status = null;
-    }
+  _refreshStatus() {
+    // implement in subclass
+  }
 
-    _setStatusConnected = () => {
-        this._status = IOStatus.IO_CONNECTED;
-    }
+  _setStatusInitial() {
+    this._status = null;
+    this._received = false;
+  }
 
-    _setStatusDisconnected = () => {
-        this._status = IOStatus.IO_DISCONNECTED;
-    }
+  _setStatusConnected() {
+    this._status = IO_CONNECTED;
+  }
 
-    _setStatusActivity = () => {
-        this._status = IOStatus.IO_ACTIVITY;
-    }
+  _setStatusDisconnected() {
+    this._status = IO_DISCONNECTED;
+    this._received = false;
+  }
+
+  _setStatusActivity() {
+    this._status = IO_ACTIVITY;
+  }
+
+  _setReceived() {
+    this._received = true;
+  }
+
+  _resetReceived() {
+    this._received = false;
+  }
+
+  destroy() {
+    this._status = null;
+    this._received = null;
+  }
 }

@@ -1,40 +1,28 @@
 import EventEmitter from 'events';
 import { ipcMain } from 'electron';
-import { createStore, applyMiddleware, combineReducers } from 'redux'
-import { forwardToRenderer, triggerAlias, replayActionMain } from 'electron-redux';
+import { createStore, applyMiddleware } from 'redux'
+import { forwardToRenderer, replayActionMain } from 'electron-redux';
 import { observer, observe } from 'redux-observers'
 
 import * as StoreEvent from '../events/StoreEvent';
-import * as appReducers from '../../common/js/store/reducers/index';
-import resetRunningItems from '../../common/js/store/middlewares/resetRunningItems';
-import resetCurrentItems from '../../common/js/store/middlewares/resetCurrentItems';
-import resetTimelineInfoUser from '../../common/js/store/middlewares/resetTimelineInfoUser';
-import resetTimelineInfo from '../../common/js/store/middlewares/resetTimelineInfo';
-import resetBoardInfoUser from '../../common/js/store/middlewares/resetBoardInfoUser';
-import resetBoardInfo from '../../common/js/store/middlewares/resetBoardInfo';
-import saveableContentCallback from '../../common/js/store/middlewares/saveableContentCallback';
+import reducers from '../../common/js/store/reducers/index';
+import saveableContentCallback from './saveableContentCallback';
 
 export default class Store extends EventEmitter {
   store = null;
-  
+
   constructor(initialState = null) {
     super();
-    
+
     this.store = createStore(
-      combineReducers(appReducers),
+      reducers,
       initialState || {},
       applyMiddleware(
-        resetCurrentItems(),
-        resetRunningItems(),
-        resetTimelineInfo(),
-        resetTimelineInfoUser(),
-        resetBoardInfo(),
-        resetBoardInfoUser(),
         saveableContentCallback(this.onSaveableContent),
         forwardToRenderer, // IMPORTANT! This goes last
       ),
     );
-    
+
     const outputsObserver = observer(
       (state) => {
         return state.outputs;
@@ -77,11 +65,17 @@ export default class Store extends EventEmitter {
       },
       this.onBoardsChange
     );
-    const previewScriptObserver = observer(
+    const runDeviceObserver = observer(
       (state) => {
-        return state.previewScript;
+        return state.runDevice;
       },
-      this.onPreviewScript
+      this.onRunDevice
+    );
+    const runScriptObserver = observer(
+      (state) => {
+        return state.runScript;
+      },
+      this.onRunScript
     );
     const runTimelineObserver = observer(
       (state) => {
@@ -95,19 +89,13 @@ export default class Store extends EventEmitter {
       },
       this.onRunBoard,
     );
-    const timelineInfoUserObserver = observer(
+    const consoleObserver = observer(
       (state) => {
-        return state.timelineInfoUser;
+        return state.console;
       },
-      this.onTimelineInfoUserChange
+      this.onConsoleChange
     );
-    const boardInfoUserObserver = observer(
-      (state) => {
-        return state.boardInfoUser;
-      },
-      this.onBoardInfoUserChange
-    );
-    
+
     observe(this.store, [
       outputsObserver,
       inputsObserver,
@@ -116,84 +104,84 @@ export default class Store extends EventEmitter {
       mediasObserver,
       timelinesObserver,
       boardsObserver,
-      previewScriptObserver,
+      runDeviceObserver,
+      runScriptObserver,
       runTimelineObserver,
       runBoardObserver,
-      timelineInfoUserObserver,
-      boardInfoUserObserver,
+      consoleObserver,
     ]);
     replayActionMain(this.store);
   }
-  
+
   get state() {
     if (this.store) {
       return this.store.getState();
     }
-    
+
     return null;
   }
-  
+
   onSaveableContent = (action) => {
     this.emit(StoreEvent.CONTENT_SAVED);
   }
-  
+
   onOutputsChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.OUTPUTS_CHANGED);
   }
-  
+
   onInputsChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.INPUTS_CHANGED);
   }
-  
+
   onDevicesChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.DEVICES_CHANGED);
   }
-  
+
   onScriptsChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.SCRIPTS_CHANGED);
   }
-  
+
   onMediasChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.MEDIAS_CHANGED);
   }
-  
+
   onTimelinesChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.TIMELINES_CHANGED);
   }
-  
+
   onBoardsChange = (dispatch, current, previous) => {
     this.emit(StoreEvent.BOARDS_CHANGED);
   }
-  
-  onPreviewScript = (dispatch, current, previous) => {
-    this.emit(StoreEvent.PREVIEW_SCRIPT);
+
+  onRunDevice = (dispatch, current, previous) => {
+    this.emit(StoreEvent.RUN_DEVICE);
   }
-  
+
+  onRunScript = (dispatch, current, previous) => {
+    this.emit(StoreEvent.RUN_SCRIPT);
+  }
+
   onRunTimeline = (dispatch, current, previous) => {
     this.emit(StoreEvent.RUN_TIMELINE);
   }
-  
+
   onRunBoard = (dispatch, current, previous) => {
     this.emit(StoreEvent.RUN_BOARD);
   }
-  
-  onTimelineInfoUserChange = (dispatch, current, previous) => {
-    this.emit(StoreEvent.TIMELINE_INFO_USER_CHANGED);
+
+  onConsoleChange = (dispatch, current, previous) => {
+    this.emit(StoreEvent.CONSOLE_CHANGED);
   }
-  
-  onBoardInfoUserChange = (dispatch, current, previous) => {
-    this.emit(StoreEvent.BOARD_INFO_USER_CHANGED);
-  }
-  
+
   dispatch = (action) => {
     if (this.store) {
       this.store.dispatch(action);
     }
   }
-  
+
   destroy = () => {
     this.store = null;
-    
+
     // electron-redux does not offer destructors, so we must manually remove
     // the listeners it added to ipcMain, otherwise we get duplicate actions
     // @TODO open an issue on Github ?

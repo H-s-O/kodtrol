@@ -1,4 +1,7 @@
+import customLog from '../common/js/lib/customLog';
 import Main from './Main';
 
+customLog('main');
+
 // Entry point
-const main = new Main();
+new Main();

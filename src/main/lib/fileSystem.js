@@ -2,6 +2,7 @@ import { readJsonSync, writeJsonSync, ensureFileSync, ensureDirSync, writeFileSy
 import { app } from 'electron';
 import path from 'path';
 import { get } from 'lodash';
+import { APP_NAME } from '../../common/js/constants/app';
 
 export {
   writeFileSync as writeFile,
@@ -10,7 +11,7 @@ export {
 
 export const getAppConfigPath = () => {
   const userData = app.getPath('userData');
-  const configPath = path.join(userData, 'Config');
+  const configPath = path.join(userData, `${APP_NAME}_config.json`);
   return configPath;
 }
 
@@ -19,11 +20,7 @@ export const getCompiledScriptsDir = () => {
 }
 
 export const getCompiledScriptPath = (scriptId) => {
-  return path.join(getCompiledScriptsDir(), `/${scriptId}.js`);
-}
-
-export const getConvertedAudiosDir = () => {
-  return path.join(app.getPath('userData'), 'audios_converted');
+  return path.join(getCompiledScriptsDir(), `${scriptId}.js`);
 }
 
 export const ensureFile = (path) => {

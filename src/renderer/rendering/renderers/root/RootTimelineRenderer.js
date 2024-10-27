@@ -4,6 +4,7 @@ import TriggerRenderer from '../items/TriggerRenderer';
 import CurveRenderer from '../items/CurveRenderer';
 import AudioRenderer from '../items/AudioRenderer';
 import timeToPPQ from '../../../lib/timeToPPQ';
+import { ITEM_SCRIPT, ITEM_MEDIA, ITEM_TRIGGER, ITEM_CURVE } from '../../../../common/js/constants/items';
 
 export default class RootTimelineRenderer extends BaseRootRenderer {
   _timeline = null;
@@ -14,7 +15,7 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
   _timeMap = null;
   _timeDivisor = 1000;
   _endCallback = null;
-  
+
   constructor(providers, timelineId, endCallback) {
     super(providers);
 
@@ -22,19 +23,20 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
 
     this._setTimelineAndItems(timelineId);
   }
-  
-  _setTimelineAndItems = (timelineId) => {
+
+  _setTimelineAndItems(timelineId) {
     this._timeline = this._providers.getTimeline(timelineId);
-    this._timeline.on('updated', this._onTimelineUpdated);
+    this._timeline.on('updated', this._onTimelineUpdated.bind(this));
 
     this._build();
   }
 
-  _onTimelineUpdated = () => {
+  _onTimelineUpdated() {
     // "Rebuild" timeline
-    
+
     Object.values(this._blocks).forEach((block) => block.instance.destroy());
     Object.values(this._curves).forEach((curve) => curve.instance.destroy());
+    Object.values(this._medias).forEach((media) => media.instance.destroy());
 
     this._blocks = null;
     this._triggers = null;
@@ -45,7 +47,7 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
     this._build();
   }
 
-  _build = () => {
+  _build() {
     // "Prepare" data
     const layersById = this._timeline.layers.reduce((obj, layer) => {
       return {
@@ -53,27 +55,30 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
         [layer.id]: layer,
       }
     }, {});
-    
+
     // Extract timeline items
     const timelineItems = this._timeline.items.sort((a, b) => {
       return layersById[a.layer].order - layersById[b.layer].order;
     });
-    
+
     this._blocks = timelineItems
-      .filter((item) => 'script' in item)
+      .filter(({ type }) => type === ITEM_SCRIPT)
       .reduce((obj, block) => {
+        const instance = new ScriptRenderer(this._providers, block.script);
+        instance.on('script_error', this._forwardEvent('script_error', { block: block.id, timeline: this._timeline.id }));
+        instance.on('script_log', this._forwardEvent('script_log', { block: block.id, timeline: this._timeline.id }));
+
         return {
           ...obj,
           [block.id]: {
             ...block,
-            instance: new ScriptRenderer(this._providers, block.script),
-            localBeatPos: -1,
+            instance,
           },
         };
       }, {});
-      
+
     this._medias = timelineItems
-      .filter((item) => 'media' in item)
+      .filter(({ type }) => type === ITEM_MEDIA)
       .reduce((obj, media) => {
         return {
           ...obj,
@@ -83,9 +88,9 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
           },
         };
       }, {});
-    
+
     this._triggers = timelineItems
-      .filter((item) => 'trigger' in item)
+      .filter(({ type }) => type === ITEM_TRIGGER)
       .reduce((obj, trigger) => {
         return {
           ...obj,
@@ -95,9 +100,9 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
           },
         };
       }, {});
-      
+
     this._curves = timelineItems
-      .filter((item) => 'curve' in item)
+      .filter(({ type }) => type === ITEM_CURVE)
       .reduce((obj, curve) => {
         return {
           ...obj,
@@ -116,17 +121,17 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
     for (let t = 0; t < duration; t += divisor) {
       const timeIndex = (t / divisor) >> 0;
       const end = t + divisor - 1;
-      for (let i = 0; i < itemsCount; i++) {
+      for (let i = 0; i < itemsCount; i++) {
         const item = timelineItems[i];
-        const { id, inTime, outTime, script, media, trigger, curve, leadInTime, leadOutTime } = item;
+        const { id, type, inTime, outTime, script, media, curve, leadInTime, leadOutTime } = item;
         let trueInTime, trueOutTime;
-        if (typeof trigger !== 'undefined') {
+        if (type === ITEM_TRIGGER) {
           trueInTime = inTime;
           // Fake a duration of at least two divisions; this will
           // make triggers with inTime near the end of a division to span at least two
           // divisions, which will lessen the chance of being missed when there's lag
           trueOutTime = inTime + divisor;
-        } else if (typeof script !== 'undefined') {
+        } else if (type === ITEM_SCRIPT) {
           const trueLeadInTime = typeof leadInTime !== 'undefined' && leadInTime !== null ? leadInTime : 500;
           const trueLeadOutTime = typeof leadOutTime !== 'undefined' && leadOutTime !== null ? leadOutTime : 500;
           trueInTime = inTime - trueLeadInTime;
@@ -136,20 +141,20 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
           trueOutTime = outTime;
         }
         if (
-            (trueInTime >= t && trueInTime <= end) // division at start
-            || (trueOutTime >= t && trueOutTime <= end) // division at end
-            || (trueInTime < t && trueOutTime > end) // division in middle
-          ) {
+          (trueInTime >= t && trueInTime <= end) // division at start
+          || (trueOutTime >= t && trueOutTime <= end) // division at end
+          || (trueInTime < t && trueOutTime > end) // division in middle
+        ) {
           let addIndex = null;
-          if (typeof script !== 'undefined') {
+          if (type === ITEM_SCRIPT) {
             addIndex = 2;
-          } else if (typeof media !== 'undefined') {
+          } else if (type === ITEM_MEDIA) {
             addIndex = 3;
-          } else if (typeof trigger !== 'undefined') {
+          } else if (type === ITEM_TRIGGER) {
             addIndex = 0;
-          } else if (typeof curve !== 'undefined') {
+          } else if (type === ITEM_CURVE) {
             addIndex = 1;
-          } 
+          }
           if (addIndex !== null) {
             if (!timeMap[timeIndex]) {
               timeMap[timeIndex] = [
@@ -166,12 +171,12 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
     }
     this._timeMap = timeMap;
   }
-  
+
   get timeline() {
     return this._timeline;
   }
 
-  setPosition = (position) => {
+  setPosition(position) {
     this._currentTime = position;
     this._currentBeatPos = -1;
     this.resetBlocks();
@@ -179,28 +184,29 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
     this.resetCurves();
     this.resetMedias()
   }
-  
-  notifyPlay = () => {
-    
-  }
-  
-  notifyStop = () => {
-    // Stop all medias
-    Object.values(this._medias).forEach(({instance}) => instance.stop());
+
+  notifyPlay() {
+
   }
 
-  _getRenderingTempo = () => {
+  notifyStop() {
+    // Stop all medias
+    Object.values(this._medias).forEach(({ instance }) => instance.stop());
+  }
+
+  _getRenderingTempo() {
     return this._timeline.tempo;
   }
-  
-  _runFrame = (frameTime) => {
+
+  _runFrame(frameTime) {
     const currentTime = this._currentTime;
-    if (currentTime >= this._timeline.outTime) {
-      this._currentTime = this._timeline.outTime;
-      this._endCallback();
+    const duration = this._timeline.duration;
+    if (currentTime >= duration) {
+      this._currentTime = duration;
+      this.emit('end', duration);
       return;
     }
-    
+
     const timeItems = this._getTimelineItemsAtTime(currentTime);
     if (timeItems === null) {
       // Nothing to render
@@ -217,8 +223,8 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
         && !trigger.instance.triggered
       ) {
         trigger.instance.render();
-        
-        triggerData[trigger.trigger] = true;
+
+        triggerData[trigger.name] = true;
       }
     }
 
@@ -238,9 +244,9 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
           currentTime,
           curvePercent: ((currentTime - inTime) / (outTime - inTime)),
         };
-        
+
         const data = curve.instance.render(currentTime, curveInfo);
-        
+
         curveData[curve.name] = data;
       }
     }
@@ -275,7 +281,7 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
         block.instance.render(currentTime, blockInfo, triggerData, curveData);
       }
     }
-    
+
     const medias = timeItems[3];
     const mediaCount = medias.length;
     for (let i = 0; i < mediaCount; i++) {
@@ -291,47 +297,51 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
           currentTime,
           mediaPercent: ((currentTime - inTime) / (outTime - inTime)),
         };
-        
+
         media.instance.render(currentTime, mediaInfo);
       }
     }
   }
 
-  _runBeat = (beatPos) => {
-    const currentTime = this._currentTime;
-    
-    const timeItems = this._getTimelineItemsAtTime(currentTime);
+  _runBeat(beatTime, previousBeatTime) {
+    const timeItems = this._getTimelineItemsAtTime(beatTime);
     if (timeItems === null) {
       return;
     }
 
     const tempo = this._getRenderingTempo();
 
+    // @TODO handle global beat diff?
+    const currentBeatPos = timeToPPQ(beatTime, tempo);
+
     const blocks = timeItems[2];
     const blockCount = blocks.length;
     for (let i = 0; i < blockCount; i++) {
       const block = this._blocks[blocks[i]];
       if (
-        currentTime >= block.inTime
-        && currentTime <= block.outTime
+        beatTime >= block.inTime
+        && beatTime <= block.outTime
       ) {
-        const localBeatPos = timeToPPQ(currentTime - block.inTime, tempo);
-        if (localBeatPos !== block.localBeatPos) {
-          block.instance.beat(beatPos, localBeatPos);
-          block.localBeatPos = localBeatPos;
+        const prevLocalBeatPos = timeToPPQ(previousBeatTime - block.inTime, tempo);
+        const currentLocalBeatPos = timeToPPQ(beatTime - block.inTime, tempo);
+        // Loop the difference between two positions; will act
+        // as catch-up in case some lag occurs
+        const diff = currentLocalBeatPos - prevLocalBeatPos;
+        for (let j = 0; j < diff; j++) {
+          block.instance.beat(currentBeatPos, prevLocalBeatPos + j);
         }
       }
     }
   }
-  
-  _runInput = (type, data) => {
+
+  _runInput(type, data) {
     const currentTime = this._currentTime;
-    
+
     const timeItems = this._getTimelineItemsAtTime(currentTime);
     if (timeItems === null) {
       return;
     }
-    
+
     const blocks = timeItems[2];
     const blockCount = blocks.length;
     for (let i = 0; i < blockCount; i++) {
@@ -344,8 +354,8 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
       }
     }
   }
-  
-  _getTimelineItemsAtTime = (time) => {
+
+  _getTimelineItemsAtTime(time) {
     const timeMap = this._timeMap;
     const timeDivisor = this._timeDivisor;
     const timeIndex = (time / timeDivisor) >> 0;
@@ -355,44 +365,49 @@ export default class RootTimelineRenderer extends BaseRootRenderer {
     return timeMap[timeIndex];
   }
 
-  restartTimeline = () => {
+  restartTimeline() {
     this.resetBlocks();
     this.resetTriggers();
     this.resetCurves();
     this.resetMedias();
   }
 
-  resetBlocks = () => {
+  resetBlocks() {
     Object.values(this._blocks).forEach((block) => block.instance.reset());
   }
 
-  resetTriggers = () => {
+  resetTriggers() {
     Object.values(this._triggers).forEach((trigger) => trigger.instance.reset());
   }
 
-  resetCurves = () => {
+  resetCurves() {
     Object.values(this._curves).forEach((curve) => curve.instance.reset());
   }
 
-  resetMedias = () => {
+  resetMedias() {
     Object.values(this._medias).forEach((media) => media.instance.reset());
   }
 
-  destroy = () => {
+  destroy() {
     if (this._timeline) {
-      this._timeline.removeAllListeners();
+      this._timeline.removeAllListeners('updated');
     }
 
-    Object.values(this._blocks).forEach((block) => block.instance.destroy());
+    Object.values(this._blocks).forEach((block) => {
+      block.instance.removeAllListeners();
+      block.instance.destroy();
+    });
     Object.values(this._curves).forEach((curve) => curve.instance.destroy());
 
+    this._timeline = null;
     this._blocks = null;
     this._triggers = null;
     this._curves = null;
     this._medias = null;
     this._timeMap = null;
-    this._timeline = null;
+    this._timeDivisor = null;
+    this._endCallback = null;
 
-    // super.destroy(); // @TODO needs babel update
+    super.destroy();
   }
 }

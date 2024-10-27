@@ -1,100 +1,139 @@
+import EventEmitter from 'events';
+
 import DmxOutput from '../outputs/DmxOutput';
 import ArtnetOutput from '../outputs/ArtnetOutput';
 import IldaOutput from '../outputs/IldaOutput';
 import AudioOutput from '../outputs/AudioOutput';
+import MidiOutput from '../outputs/MidiOutput';
+import { IO_DMX, IO_ARTNET, IO_ILDA, IO_AUDIO, IO_MIDI } from '../../common/js/constants/io';
+import { READY } from '../events/OutputEvent';
 
-export default class Output {
+export default class Output extends EventEmitter {
   _id = null;
   _type = null;
-  _extraData = null;
+  _driver = null;
+  _port = null;
+  _address = null;
   _output = null;
+  _dacRate = null;
   _bufferData = {};
   _hash = null;
 
   constructor(sourceOutput) {
+    super();
+
     this.update(sourceOutput);
   }
-  
-  update = (sourceOutput) => {
+
+  update(sourceOutput) {
     const {
       id,
       type,
-      extraData,
+      driver,
+      port,
+      address,
+      dacRate,
       hash,
     } = sourceOutput;
-    
+
     this._id = id;
     this._type = type;
-    this._extraData = extraData;
+    this._driver = driver;
+    this._port = port;
+    this._address = address;
+    this._dacRate = dacRate;
     this._hash = hash;
-    
-    this.setOutput(type, extraData);
+
+    this._setOutput();
   }
-  
-  setOutput = (type, extraData) => {
-    if (this._output) {
-      this._output.destroy();
-    }
-    
+
+  _setOutput() {
+    this._destroyOutput();
+
     let output = null;
-    
-    if (type === 'dmx') {
-      const { subType, port } = extraData;
-      output = new DmxOutput(subType, port);
-    } else if (type === 'artnet') {
-      const { address } = extraData;
-      output = new ArtnetOutput(address);
-    } else if (type === 'ilda') {
-      const { subType, address } = extraData;
-      output = new IldaOutput(subType, address)
-    } else if (type === 'audio') {
-      const { device } = extraData;
-      output = new AudioOutput(device);
+
+    switch (this._type) {
+      case IO_DMX:
+        output = new DmxOutput(this._driver, this._port);
+        break;
+      case IO_ARTNET:
+        output = new ArtnetOutput(this._address);
+        break;
+      case IO_ILDA:
+        output = new IldaOutput(this._driver, this._dacRate, this._address);
+        break;
+      case IO_AUDIO:
+        output = new AudioOutput(this._driver);
+        break;
+      case IO_MIDI:
+        output = new MidiOutput(this._driver);
+        break;
+      default:
+        throw new Error(`Unknown output type "${this._type}"`);
+        break;
     }
-    
+
+    if (output instanceof EventEmitter) {
+      output.once(READY, this._onOutputReady.bind(this));
+    }
+
     this._output = output;
   }
-  
+
   get id() {
     return this._id;
   }
-  
+
   get outputInstance() {
     return this._output;
   }
-  
+
   get type() {
     return this._type;
   }
-  
+
   get hash() {
     return this._hash;
   }
-  
-  buffer = (data) => {
-    // @TODO handle serial/OSC/MIDI output data
+
+  buffer(data) {
+    // @TODO handle serial/OSC output data
     this._bufferData = {
       ...this._bufferData,
       ...data,
     };
   }
-  
-  flush = () => {
+
+  flush() {
     if (this._output) {
       this._output.send(this._bufferData);
     }
     this._bufferData = {};
   }
-  
-  destroy = () => {
+
+  _onOutputReady() {
+    this.emit(READY);
+  }
+
+  _destroyOutput() {
     if (this._output) {
+      if (this._output instanceof EventEmitter) {
+        this._output.removeAllListeners();
+      }
       this._output.destroy();
     }
-    
+  }
+
+  destroy() {
+    this._destroyOutput();
+
     this._id = null;
     this._type = null;
-    this._extraData = null;
+    this._driver = null;
+    this._port = null;
+    this._address = null;
     this._output = null;
+    this._dacRate = null;
     this._bufferData = null;
     this._hash = null;
   }

@@ -1,29 +1,34 @@
 import EventEmitter from 'events';
-import { app, Menu } from 'electron';
+import { Menu } from 'electron';
 
 import * as MainMenuEvent from '../events/MainMenuEvent';
 import openExternalFolder from '../../common/js/lib/openExternalFolder';
 import { getCompiledScriptsDir } from '../lib/fileSystem';
+import { APP_NAME } from '../../common/js/constants/app';
+import isDev from '../../common/js/lib/isDev';
+import { isMac } from '../../common/js/lib/platforms';
 
 export default class MainMenu extends EventEmitter {
   constructor() {
     super();
-    
+
     const template = [
-      {
-        label: app.getName(),
-        submenu: [
-          {
-            role: 'about',
-          },
-          {
-            type: 'separator',
-          },
-          {
-            role: 'quit',
-          },
-        ],
-      },
+      ...(isMac ? [
+        {
+          label: APP_NAME,
+          submenu: [
+            {
+              role: 'about',
+            },
+            {
+              type: 'separator',
+            },
+            {
+              role: 'quit',
+            },
+          ],
+        },
+      ] : []),
       {
         label: 'File',
         submenu: [
@@ -42,7 +47,7 @@ export default class MainMenu extends EventEmitter {
           },
           {
             label: 'Save project',
-            accelerator: 'CommandOrControl+S',
+            accelerator: 'CommandOrControl+Shift+S',
             click: this.onSaveProjectClick,
           },
           {
@@ -55,6 +60,14 @@ export default class MainMenu extends EventEmitter {
           {
             role: 'close',
           },
+          ...(!isMac ? [
+            {
+              type: 'separator',
+            },
+            {
+              role: 'quit',
+            },
+          ] : []),
         ],
       },
       {
@@ -74,36 +87,31 @@ export default class MainMenu extends EventEmitter {
           },
         ],
       },
+      ...(isDev ? [
+        {
+          label: 'Dev',
+          submenu: [
+            {
+              role: 'toggledevtools',
+            },
+            {
+              type: 'separator',
+            },
+            {
+              role: 'forcereload',
+            },
+            {
+              type: 'separator',
+            },
+            {
+              label: 'Reveal compiled scripts dir',
+              click: this.onRevealCompiledScriptsDirClick,
+            }
+          ],
+        }
+      ] : []),
     ];
-    
-    const isDev = true;
-    if (isDev) {
-      template.push({
-        label: 'Dev',
-        submenu: [
-          {
-            role: 'toggledevtools',
-          },
-          {
-            type: 'separator',
-          },
-          {
-            role: 'reload',
-          },
-          {
-            role: 'forcereload',
-          },
-          {
-            type: 'separator',
-          },
-          {
-            label: 'Reveal compiled scripts dir',
-            click: this.onRevealCompiledScriptsDirClick,
-          }
-        ],
-      })
-    }
-    
+
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
   }
@@ -111,24 +119,37 @@ export default class MainMenu extends EventEmitter {
   onRevealCompiledScriptsDirClick = () => {
     openExternalFolder(getCompiledScriptsDir());
   }
-  
+
   onCreateProjectClick = () => {
     this.emit(MainMenuEvent.CREATE_PROJECT);
   }
-  
+
   onOpenProjectClick = () => {
     this.emit(MainMenuEvent.OPEN_PROJECT);
   }
-  
+
   onAboutClick = () => {
     this.emit(MainMenuEvent.ABOUT);
   }
-  
+
   onSaveProjectClick = () => {
     this.emit(MainMenuEvent.SAVE_PROJECT);
   }
-  
+
   onCloseProjectClick = () => {
     this.emit(MainMenuEvent.CLOSE_PROJECT);
+  }
+
+  static setEmpty() {
+    const template = [
+      { role: 'appMenu' },
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+  }
+
+  destroy() {
+    MainMenu.setEmpty();
   }
 }

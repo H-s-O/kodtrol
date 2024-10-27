@@ -1,4 +1,7 @@
-/node_modules
 .DS_Store
+/.vscode
+/.cache
+/node_modules
 /test*.js
 /dev/screenshots/*
+/dev/helpers_doc.json

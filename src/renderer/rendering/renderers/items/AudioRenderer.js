@@ -1,55 +1,71 @@
-import uniqid from 'uniqid';
-
 export default class AudioRenderer {
   _media = null;
   _providers = null;
-  
-  started = false;
-  volume = 1;
-  streamId = null;
-  duration = 0;
-  id = null;
-  
+  _started = false;
+  _volume = 1;
+  _duration = 0;
+
   constructor(providers, sourceAudio) {
     this._providers = providers;
-    
-    const { id, volume, inTime, outTime, media } = sourceAudio;
-    
-    this.id = id;
-    this.volume = Number(volume);
-    this.duration = Number(outTime) - Number(inTime);
-    
-    this.setMedia(media);
+
+    const {
+      volume,
+      inTime,
+      outTime,
+      media,
+    } = sourceAudio;
+
+    this._volume = Number(volume);
+    this._duration = Number(outTime) - Number(inTime);
+
+    this._setMedia(media);
   }
-  
-  setMedia = (mediaId) => {
+
+  _setMedia(mediaId) {
     this._media = this._providers.getMedia(mediaId);
   }
-  
-  reset = () => {
-    this.started = false;
-    this.streamId = null;
-  }
-  
-  render = (delta, blockInfo) => {
-    const { mediaPercent } = blockInfo;
-    if (!this.started) {
-      this.streamId = uniqid();
-    }
-    
-    this.started = true;
 
-    const position = mediaPercent * this.duration;
-    const volume = this.volume;
-    
-    this._media.setActive(true);
-    this._media.setVolume(volume);
-    this._media.setPosition(position);
-    this._media.setStreamId(this.streamId); // hack
+  reset() {
+    this._started = false;
   }
-  
-  stop = () => {
+
+  render(delta, blockInfo) {
+    const { mediaPercent } = blockInfo;
+
+    if (this._media) {
+      this._media.setPlaying(true);
+
+      const position = mediaPercent * this._duration;
+      const volume = this._volume;
+
+      this._media.setVolume(volume);
+      this._media.setPosition(position, !this._started);
+    }
+
+    this._started = true;
+  }
+
+  stop() {
     this.reset();
-    this._media.stop();
+
+    if (this._media) {
+      this._media.setPlaying(false);
+    }
+  }
+
+  _destroyMediaProxy() {
+    if (this._media) {
+      this._media.destroy();
+    }
+  }
+
+  destroy() {
+    this._destroyMediaProxy();
+
+    this._media = null;
+    this._providers = null;
+    this._started = null;
+    this._volume = null;
+    this._duration = null;
   }
 }

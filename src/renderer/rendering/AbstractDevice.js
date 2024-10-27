@@ -1,23 +1,21 @@
 export default class AbstractDevice {
   _id = null;
   _name = null;
-  _groups = [];
+  _tags = [];
   _type = null;
   _output = null;
   _providers = null;
   _hash = null;
 
-  constructor(providers, sourceDevice) {
+  constructor(providers) {
     this._providers = providers;
-    
-    this.update(sourceDevice);
   }
-  
-  update = (sourceDevice) => {
+
+  update(sourceDevice) {
     const {
       id,
       name,
-      groups,
+      tags,
       type,
       output,
       hash,
@@ -27,33 +25,25 @@ export default class AbstractDevice {
     this._name = name;
     this._type = type;
     this._hash = hash;
-    
-    this.setOutput(output);
-    this.setGroups(groups);
+    this._tags = tags;
+
+    this._setOutput(output);
   }
-  
-  setOutput = (outputId) => {
+
+  _setOutput(outputId) {
     // Guard
     if (!outputId) {
       this._output = null;
       return;
     }
-    
+
     this._output = this._providers.getOutput(outputId);
   }
-  
-  setGroups = (groups) => {
-    if (typeof groups === 'string') { // backward compat
-      this._groups = groups.split(',');
-      return;
-    }
-    this._groups = groups;
-  }
-  
+
   get id() {
     return this._id;
   }
-  
+
   get name() {
     return this._name;
   }
@@ -61,23 +51,23 @@ export default class AbstractDevice {
   get type() {
     return this._type;
   }
-  
+
   get hash() {
     return this._hash;
   }
-  
-  is = (type) => {
+
+  isType(type) {
     return this._type === type;
   }
-  
-  hasGroup = (group) => {
-    return this._groups.indexOf(group) !== -1;
+
+  hasTag(tag) {
+    return this._tags.includes(tag);
   }
-  
-  destroy = () => {
+
+  destroy() {
     this._id = null;
     this._name = null;
-    this._groups = null;
+    this._tags = null;
     this._type = null;
     this._output = null;
     this._providers = null;
