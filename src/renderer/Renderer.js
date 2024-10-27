@@ -280,6 +280,7 @@ export default class Renderer {
 
   _getDevice(deviceId) {
     const device = this._devices[deviceId];
+    if (!device) return null;
     if (device.type === IO_DMX) {
       return new DmxDeviceProxy(device);
     } else if (device.type === IO_ILDA) {

@@ -41,7 +41,7 @@ export default class ScriptRenderer extends EventEmitter {
 
   _reloadDevicesProxies() {
     this._destroyDevicesProxies();
-    this._devices = this._providers.getDevices(this._script.devices);
+    this._devices = this._providers.getDevices(this._script.devices).filter((device) => !!device);
   }
 
   _onScriptUpdated() {
