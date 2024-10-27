@@ -2,7 +2,7 @@ import EventEmitter from 'events';
 import { fork } from 'child_process';
 import { join } from 'path';
 
-import { getCompiledScriptsDir, getConvertedAudiosDir } from '../lib/fileSystem';
+import { getCompiledScriptsDir } from '../lib/fileSystem';
 import * as RendererEvent from '../events/RendererEvent';
 
 export default class Renderer extends EventEmitter {
@@ -21,7 +21,6 @@ export default class Renderer extends EventEmitter {
       env: {
         KODTROL_DEV: process.env['KODTROL_DEV'],
         KODTROL_SCRIPTS_DIR: getCompiledScriptsDir(),
-        KODTROL_AUDIOS_DIR: getConvertedAudiosDir(),
       }
     });
     this.childProcess.on('message', this.onMessage);

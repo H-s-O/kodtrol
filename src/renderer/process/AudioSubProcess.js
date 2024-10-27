@@ -3,8 +3,6 @@ import electron from 'electron';
 import { join } from 'path';
 import EventEmitter from 'events';
 
-import { getConvertedAudiosDir } from '../lib/fileSystem';
-
 export default class AudioSubProcess extends EventEmitter {
   _childProcess = null;
 
@@ -19,7 +17,6 @@ export default class AudioSubProcess extends EventEmitter {
       stdio: ['ipc', 'pipe', 'inherit'],
       env: {
         KODTROL_DEV: process.env['KODTROL_DEV'],
-        KODTROL_AUDIOS_DIR: getConvertedAudiosDir(),
       },
     });
     this._childProcess.stdout.setEncoding('utf8');

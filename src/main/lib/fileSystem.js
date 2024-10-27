@@ -23,10 +23,6 @@ export const getCompiledScriptPath = (scriptId) => {
   return path.join(getCompiledScriptsDir(), `${scriptId}.js`);
 }
 
-export const getConvertedAudiosDir = () => {
-  return path.join(app.getPath('userData'), 'audios_converted');
-}
-
 export const ensureFile = (path) => {
   return ensureFileSync(path);
 };
