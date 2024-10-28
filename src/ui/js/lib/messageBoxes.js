@@ -18,6 +18,7 @@ export function deleteWarning(message, detail = null, callback) {
     cancelId: 1,
     message,
     detail: detail ? detail : undefined,
+    noLink: true,
   });
   callback(response === 0)
 };
@@ -38,6 +39,7 @@ export function closeWarning(message, detail = null, callback) {
     cancelId: 1,
     message,
     detail: detail ? detail : undefined,
+    noLink: true,
   });
   callback(response === 0)
 };

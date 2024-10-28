@@ -5,6 +5,7 @@ import { PROJECT_FILE_EXTENSION, APP_NAME } from '../../common/js/constants/app'
 export const createProjectDialog = (win = null) => {
   const options = {
     title: 'Create project',
+    noLink: true,
   }
   let result;
   if (win) {
@@ -24,6 +25,7 @@ export const openProjectDialog = (win = null) => {
         extensions: [PROJECT_FILE_EXTENSION],
       },
     ],
+    noLink: true,
   };
   let result;
   if (win) {
@@ -43,6 +45,7 @@ export const warnBeforeClosingProject = (win = null) => {
     defaultId: 0,
     cancelId: 1,
     message: 'Are you sure you want to close this project?',
+    noLink: true,
   };
   let result;
   if (win) {
