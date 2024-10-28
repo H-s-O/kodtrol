@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useMemo } from 'react';
-import { Button, Tabs, Tab, Card, Intent, Tag } from '@blueprintjs/core';
+import { Button, Tabs, Tab, Card, Intent, Tag, Radio, Classes } from '@blueprintjs/core';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import uniqid from 'uniqid';
@@ -13,6 +13,7 @@ import InlineFormGroup from '../ui/InlineFormGroup';
 import TextInput from '../ui/inputs/TextInput';
 import NumberInput from '../ui/inputs/NumberInput';
 import SelectInput from '../ui/inputs/SelectInput';
+import RadioInput from '../ui/inputs/RadioInput';
 import {
   IO_DMX,
   IO_ILDA,
@@ -50,6 +51,13 @@ const StyledAddButton = styled(({ withMargin, ...otherProps }) => <Button {...ot
     margin-top: 10px;
   `}
 `;
+
+const RadioItemLabel = ({ label, helperText = null }) => (
+  <>
+    <span>{label}</span>
+    {helperText && (<div className={`${Classes.TEXT_MUTED} ${Classes.TEXT_SMALL}`}>{helperText}</div>)}
+  </>
+)
 
 const ItemSecondaryLabel = ({ id, type, onDelete }) => {
   const deleteClickHandler = useCallback((e) => {
@@ -175,41 +183,6 @@ const SingleInput = ({ value, onChange, availableItems }) => {
   )
 };
 
-const getDmxDriverHelper = (driver) => {
-  switch (driver) {
-    case 'bbdmx':
-      return 'For a BeagleBone-DMX interface.';
-      break;
-    case 'dmx4all':
-      return 'For DMX4ALL devices like the "NanoDMX USB Interface".';
-      break;
-    case 'enttec-usb-dmx-pro':
-      return 'For "Enttec USB DMX Pro" or devices using a similar chip like the "DMXKing ultraDMX Micro".';
-      break;
-    case 'enttec-open-usb-dmx':
-      return 'For "Enttec Open DMX USB". This device is NOT recommended, there are known hardware limitations and this driver is not very stable.';
-      break;
-    case 'dmxking-utra-dmx-pro':
-      return 'For the DMXKing Ultra DMX pro interface.';
-      break;
-  }
-
-  return null;
-}
-
-const getIldaDriverHelper = (driver) => {
-  switch (driver) {
-    case 'ether-dream':
-      return 'For a Ether Dream network DAC.';
-      break;
-    case 'laserdock':
-      return 'For a Laserdock/Lasercube USB DAC.';
-      break;
-  }
-
-  return null;
-}
-
 const SingleOutput = ({ value, onChange, availableItems }) => {
   const {
     name = null,
@@ -261,21 +234,20 @@ const SingleOutput = ({ value, onChange, availableItems }) => {
         <>
           <InlineFormGroup
             label="Driver"
-            helperText={!driver ? 'A DMX output driver is mandatory.' : getDmxDriverHelper(driver)}
-            intent={!driver ? Intent.DANGER : driver === 'enttec-open-usb-dmx' ? Intent.WARNING : undefined}
+            helperText={!driver ? 'A DMX output driver is mandatory.' : undefined}
+            intent={!driver ? Intent.DANGER : undefined}
           >
-            <SelectInput
+            <RadioInput
               name="driver"
               value={driver}
               onChange={changeHandler}
             >
-              <option value="null">--</option>
-              <option value="bbdmx">BeagleBone-DMX</option>
-              <option value="dmx4all">DMX4ALL</option>
-              <option value="enttec-usb-dmx-pro">Enttec USB DMX Pro</option>
-              <option value="enttec-open-usb-dmx">Enttec Open DMX USB</option>
-              <option value="dmxking-utra-dmx-pro">DMXKing Ultra DMX pro</option>
-            </SelectInput>
+              <Radio value="bbdmx" labelElement={<RadioItemLabel label='BeagleBone-DMX' helperText='For a BeagleBone-DMX interface.' />} />
+              <Radio value="dmx4all" labelElement={<RadioItemLabel label='DMX4ALL' helperText='For DMX4ALL devices like the "NanoDMX USB Interface".' />} />
+              <Radio value="enttec-usb-dmx-pro" labelElement={<RadioItemLabel label='Enttec USB DMX Pro' helperText='For "Enttec USB DMX Pro" or devices using a similar chip like the "DMXKing ultraDMX Micro".' />} />
+              <Radio value="enttec-open-usb-dmx" labelElement={<RadioItemLabel label='Enttec Open DMX USB' helperText='For "Enttec Open DMX USB". This device is NOT recommended, there are known hardware limitations and this driver is not very stable.' />} />
+              <Radio value="dmxking-utra-dmx-pro" labelElement={<RadioItemLabel label='DMXKing Ultra DMX pro' helperText='For the DMXKing Ultra DMX pro interface.' />} />
+            </RadioInput>
           </InlineFormGroup>
           {driver && (
             <InlineFormGroup
@@ -296,18 +268,17 @@ const SingleOutput = ({ value, onChange, availableItems }) => {
         <>
           <InlineFormGroup
             label="Driver"
-            helperText={!driver ? 'An ILDA output driver is mandatory.' : getIldaDriverHelper(driver)}
+            helperText={!driver ? 'An ILDA output driver is mandatory.' : undefined}
             intent={!driver ? Intent.DANGER : undefined}
           >
-            <SelectInput
+            <RadioInput
               name="driver"
               value={driver}
               onChange={changeHandler}
             >
-              <option value="null">--</option>
-              <option value="ether-dream">Ether Dream</option>
-              <option value="laserdock">Laserdock</option>
-            </SelectInput>
+              <Radio value="ether-dream" labelElement={<RadioItemLabel label='Ether Dream' helperText='For a Ether Dream network DAC.' />} />
+              <Radio value="laserdock" labelElement={<RadioItemLabel label='Laserdock' helperText='For a Laserdock/Lasercube USB DAC.' />} />
+            </RadioInput>
           </InlineFormGroup>
           {driver === 'ether-dream' && (
             <InlineFormGroup
