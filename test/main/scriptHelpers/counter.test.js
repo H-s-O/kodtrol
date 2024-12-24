@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import counter, { counterReset, counterResetAll } from '../../../src/main/lib/helpers/counter';
+import counter, { counterLimit, counterReset, counterResetAll } from '../../../src/main/lib/helpers/counter';
 
 describe('Helper - counter', function () {
   it('should init properly with default ID and return 0', function () {
@@ -10,6 +10,11 @@ describe('Helper - counter', function () {
   it('should increment properly with default ID', function () {
     expect(counter()).to.equal(1);
     expect(counter()).to.equal(2);
+  });
+
+  it('should return proper limit result with default ID', function () {
+    expect(counterLimit(4)).to.be.false;
+    expect(counterLimit(4)).to.be.true;
   });
 
   it('should reset with default ID to 0', function () {
@@ -24,6 +29,11 @@ describe('Helper - counter', function () {
   it('should increment properly with custom ID', function () {
     expect(counter('myCounter')).to.equal(1);
     expect(counter('myCounter')).to.equal(2);
+  });
+
+  it('should return proper limit result with custom ID', function () {
+    expect(counterLimit(4, 'myCounter')).to.be.false;
+    expect(counterLimit(4, 'myCounter')).to.be.true;
   });
 
   it('should reset with custom ID to 0', function () {
